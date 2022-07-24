@@ -1,0 +1,268 @@
+
+ site: redis.io/download
+        redis.io/commands
+		redis.io/documentation
+ 
+ Tutorial bom: try.redis.io
+  
+  uouJL451%&*(;IkljI
+ 
+ ------================= Comandos instalação =====================
+ 
+ iniciar serviços (primeira vez): docker-compose up -d
+ 
+ inicar as aulas: docker-compose start
+ 
+ parar serviços (fim das aulas) : docker-compose stop
+ 
+ 
+ ver verões: redis-server --version
+ 
+ 
+ Matar os serviços (caso não for usar mais): docker-compose download
+ 
+ Apagar todos volumes sem uso (caso não for usar mais) docker volume prune
+ 
+ 
+Ver conteiners ativos: docker ps
+
+ver todos: docker ps -a
+
+Executar comandos no container: docker exec -it <conteiner><comando>
+
+ver logs: docker logs <conteiner>
+
+enviar arquivso: docker cp <diretorioOrigem><container>:/<diretorioDestino>
+
+Acesso Redis : docker exec -it redis bash
+		Acesso Redis CLI: redis-cli
+		Acesso Redis server: redis-server
+		
+instalação local: src/redis-server    ou src/redis-cli
+
+
+-------------====================   Estrutura de dados  =====================================
+
+------------======================= strings ==========================
+
+string : set minhaChave Valor
+opçõe:    falha se ja existir: set minhaChave valor nx 
+          (default) substitui se existir:  set minhaChave valor xx
+
+pegar: get minhaChave Valor
+
+multiplos set: mset chave1 valor1 chave2 valor2 ....
+
+multiplos get: mget chave1 valor1 chave2 valor2 ....
+
+
+Tamanho valor: strlen minhaChave
+
+
+string como inteiro: 
+  incrementar: incr chave
+  decrementar: decr chave
+  incrementa um valor: incrby chave valorIncremento
+  decrementa um valor: decrby chave valorDecremento
+  
+ 
+
+Ver se exite 1 existe e 0 não: exists chave
+
+deletar: del chave
+
+tipo da chave: type chave
+
+tempo para chave expirar (persistencia):
+    expire chave temposegundos
+	pexpire chae tempoMilisegundos
+	
+criar ja com tempo: set chave ex temposegundos
+                    set chave px tempoMilissegundos
+					
+					
+ver tempo restante chave:  ttl chave (resposta segundos)   -> -1 sempre persiste e -2 não existe.
+                           pttl chave (resposta Milissegundos)
+						   
+Remover tempo (aparece 1 como sucesso): persist chave
+
+
+	
+------------======================= LISTAS ==========================
+
+Inserir inicio (esquerda): lpush chave valor
+
+Inserir final (direita) : rpush chave valor
+
+ver elementos: lrange chave indiceElementoInicio indiceElementoFim  -> 0primeiro ... -1 antPen -2Penult -3Ultimo elemento.
+
+
+Recuperar e eliminar(esquerda): lpop chave
+
+Recuperar e eliminar (direita): rpop chave
+
+
+Bloquear Lista por um tempo (esquerda): blpop chave tempo  --> tempo é escala de segundos
+
+Bloquear Lista por um tempo (direita): brpop chave tempo
+
+
+Definir intervalo novo (remove todos elementos fora do intervalo) : ltrim chave indiceNovoInicio indiceNovoFim
+
+ver o tamanho da lista: llen chave
+
+
+Ver se exite 1 existe e 0 não: exists chave
+
+
+--------------=========================== SETS (sem ordem, não ordenada) =============================
+
+adicionar elementos: sadd chave valor1... valorN
+
+retornar: smembers chave
+
+recuparar e remover: spop chave
+
+Ver se um elemento existe: sismember chave valor
+
+ver o numero de elementos: scard chave
+
+remover elemento: srem chave
+
+
+
+Interseção : sinter chave1... chaveN
+
+diferença: sdiff chave1 ... chaveN
+
+Uniao: sunion chave1 ... chaveN
+
+
+Para nova chave armazenamento: 
+    Interseção : sinterstore chaveArmazenamento chave1... chaveN
+
+	diferença: sdiffstore chaveArmazenamento chave1 ... chaveN
+
+	Uniao: sunionstore chaveArmazenamento chave1 ... chaveN
+
+				   
+
+
+Ordenados ===========
+
+adiconar elementos: zadd chave score1 valor1 .... scoreN valorN
+
+ver elementos em um intervalo: crescetn: zrange chave indiceInicio indiceFim	[withscore]					   
+
+ver elementos em um intervalo: decrescente: zrevrange chave indiceInicio indiceFim	[withscore]					   
+
+						   
+Recuperar e remover: Maior escore: -zpopmax chave					   
+Recuperar e remover: Menor escore: -zpopmin chave
+
+
+bloquear se vazio por um tempo: 
+                  Maior score: -bzpopmax chave tempo  --> segundos
+				  Maior score: -bzpopmin chave tempo  --> segundos
+				  
+
+ver a posição: 
+            ordem normal: zrank chave valor 
+			ordem reversa: zrevrank chave valor 
+			
+			
+ver score: zscore chave valor
+
+
+ver numero de elementos: zcard chave
+
+remover elemento: zrem chave valor
+
+
+-----------------------======================== hashes =================
+
+definir valor de um campo de hash: hmset chave campo1 valor1 ...
+
+obter valor : hget chave campo
+
+obeter varios: hmget chave campo1 ...
+
+todos campos: hgetall chave
+
+Incrementar valoes (positivos e negativos): hincrby chave campo incremento
+
+obter numero de campos: hlen chave
+
+tamanho do valor: hstrlen chave campo
+
+obter todos campos hash: hkey chave campo
+
+obeter todos valores hahs: hvals chave
+
+deletar campo: hdel chave campo
+
+
+-----------------------======================== PUB/SUB (publicar/assinar) =================
+
+publicar: publish canal mensagem
+
+assinar: subscribe canal1 canal2 .. canalN
+
+Assinar canais com padrao: psubscribe padrao1.... padraoN
+
+
+cancelar assinatura canai: unsubscribe canal1 ... CanalN
+
+cancelar todos canais: unsubscribe
+
+cancelar padrao: punsubscribe padrao1 ... padraoN
+
+ 
+
+-----------------------======================== CONFIGURAÇÕES =================
+
+Pode configurar no arquivo redis.conf
+
+
+Ler parametros: config get parametros
+
+Ler um padrao de parametros: config get parametros
+
+ler todos parametros: config get *
+
+
+exemplo: config get appendonly (esta persistindo )
+
+
+CACHE LRU (LEAST RECENTLY USED) - REMOVER AUTOMATICAMENTE OS DADOS ANTIGOS
+
+   link: redis.io/topics/lru-cache
+   
+ ex: config get maxmemory-policy allkeys-lru (remove os dados antigos a medida que remove)
+     config set maxmemory 2mb -> configurar para 2mb memoria
+    
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 

@@ -1,0 +1,555 @@
+Instalação Docker - Windows
+Link para instalação do Docker Desktop no Windows
+
+https://hub.docker.com/editions/community/docker-ce-desktop-windows/ (Links para um site externo.)
+Link de Atualização Windows 10 (20.04)
+
+https://www.microsoft.com/pt-br/software-download/windows10 (Links para um site externo.)
+Download WSL 2
+
+https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi
+
+
+
+---------------===============================================
+
+
+1. Instalação do docker e docker-compose
+
+Docker: https://docs.docker.com/get-docker/ (Links para um site externo.)
+Docker-compose: https://docs.docker.com/compose/install/ (Links para um site externo.)
+2. Executar os seguintes comandos, para baixar as imagens do Cluster de Big Data:
+
+git clone https://github.com/rodrigo-reboucas/docker-bigdata.git
+cd docker-bigdata
+docker-compose pull
+3. Iniciar o cluster Hadoop através do docker-compose
+
+docker-compose up -d
+
+1. Iniciar o cluster de Big Data
+
+cd docker-bigdata
+docker-compose up -d
+2. Baixar os dados dos exercícios do treinamento
+
+cd input
+sudo git clone https://github.com/rodrigo-reboucas/exercises-data.git
+3. Acessar o container do namenode
+
+4. Criar a estrutura de pastas apresentada a baixo pelo comando: $ hdfs dfs -ls -R /
+
+user/aluno/
+
+<nome>
+
+data
+
+recover
+
+delete
+
+5. Enviar a pasta “/input/exercises-data/escola” e o arquivo “/input/exercises-data/entrada1.txt” para  data
+
+6. Mover o arquivo “entrada1.txt” para recover
+
+7. Baixar o arquivo do hdfs “escola/alunos.json” para o sistema local /
+
+8. Deletar a pasta recover
+
+9. Deletar permanentemente o delete
+
+
+LIMPAR OS CONTEINERS DO DISCO:   docker-compose 
+
+LIMPAR VALUME: docker volume prune
+
+LIMPAR NETWORK: docker network prune
+
+LIMPAR CONTEINER, VOLUME E NET: docker kill echo $(docker ps -a -q)
+
+LIMPAR AS IMAGENS: docker rmi echo $(docker images -a -q)
+
+LIMPAR TUDO (ai so com docker-compose up -d): docker system prune --all
+
+
+-----------=============================== comandos ==========================
+
+inico aula: docker-compose start
+
+fim de aula: docker-compose stop 
+
+Caso der erro ao Iniciar os conteiners, no Power Shell usar:
+net stop winnat
+docker start container_name
+net start winnat
+
+
+--- visualizar container
+docker ps
+
+ para todos: docker ps -a
+ 
+ 
+ ----------
+ 
+ executar comandos: docker exec -it <container><comando>
+ 
+ visualir os logs: docker logs <container> 
+ docker-compose logs
+ 
+ enviar arquivo: docker cp <diretorio><conteiner>:/<diretorio>
+ 
+ acesso container namenode: docker exec -it namenode bash
+ 
+ acesso container do hive: docker exec -it hive-server bash
+ 
+ ---------
+
+caso for mudar o arquivo compose: docker-compose up -d , bom rodar antes docker-compose down
+
+apagar todos volumes: docker volume prune
+
+apagar tudo: docker system prune --all
+
+
+---------------
+
+acesso o container namenode: docker exec -it namenode bash
+
+acesso o container do hive: docker exec -it hive-server bash
+
+
+-----------===================== HDFS ==============
+
+listar: hdfs dfs -ls -R /XXX/xxxx/xxxx/local
+
+enviar: hdfs dfs -put /xxx/xxx/xxxx/origem/ /xxxx/xxx/xxx/destino
+
+baixar: hdfs dfs -get /xxx/xxx/xxx/origem/ /xxxx/xxx/xxx/destino
+
+remover: hdfs dfs -rm -R /xxx/xxx/xxx/local
+
+remover sem ficar na licheira: hdfs dfs -rm -SkipTrash -R /xxxx/xxxx/xxxx/local
+
+localizar arquivo Case sensitivo: hdfs dfs -find /xxxxx/xxxx/xxx/local -name nome_arquivo.extencao
+
+localizar arquivo nao Case sensitivo: hdfs dfs -find /xxxxx/xxxx/xxx/local -iname nome_arquivo.extencao  
+
+ver o ultimo kbit (linhas) : hdfs dfs -tail /xxx/xxx/xxx/nome-arquivo.extensao
+
+mostrar arquivo: hdfs dfs -cat /xxx/xxx/xxx/nome-arquivo.extensao
+
+mostrar arquivo: hdfs dfs -cat /xxx/xxx/xxx/nome-arquivo.extensao | head -n 2
+
+mostrar o validador de soma do arquivo: hdfs dfs -checksum /xxx/xxx/xxx/nome-arquivo.extensao
+
+
+criar arquivo branco (bom para data hora do que esta havend): hdfs dfs -touchz /xxxx/xxx/xxx/local
+ou
+docker exec -it namenode hdfs dfs -mkdir /xxxx/xxx/xxx/nome.extensao
+
+mudar o fator de replicacao de arquivo: hdfs dfs -setrep 2 /xxxx/xxx/xxx/local
+
+saber sobre um comando: hdfs dfs -help stat
+
+saber informações de um arquivo: hdfs dfs -stat %o /xxxxx/xxxx/xxxx/nome-arquivo.extensao.
+
+
+ver espaço livre: hdfs dfs -df -h /xxxx/xxx/xxx/local
+
+ver espaco usado/ocupado: hdfs dfs -du -h /xxxx/xxx/xxx/local
+
+
+--------------------================== HIVE =======================
+
+Conectar: beeline -u jdbc:hive2://localhost:10000
+
+mostrar bancos: show databases;
+
+usar banco : use nome-banco;
+
+criar tabela: create table nome-tabela(
+zip_code int,
+total_population int,
+median_age float,
+total_males int,
+total_females int,
+total_households int,
+average_households_size float
+)
+row format delimited
+fields terminated by ','
+lines terminated by '\n'
+stored as textfile
+tblproperties("skip.header.line.count"="1");
+
+ou
+create table user(
+id int,
+name String,
+age int
+)
+paritioned by (data String) --- este campo posso usar na consulta mas nao vai la no create.
+clustered by (id) into 4 buckets;
+
+
+
+decriçaõ/dados do tabela: desc nome-tabela;
+
+ver demais informações da tabela: desc formatted nome-tabela;
+
+
+inserir dados (especifico ou de um objet do banco):
+insert into table nome-tabela [partition(parition='value')] values(campo, value), (campo, value), (campo, value)
+ex: 
+insert into values (10, 'rodrigo') , (11, 'augusto');
+insert into users parition(data=now()) values(10, 'Rodrigo'), (11, 'augusto');
+insert into users select * from cliente;
+
+
+carregamento (dados de um diretorio para o banco) : load data inpath <diretório> into table <nomeTabela>
+ex: 
+load data local inpath '/home/cloudera/data/test' into table alunos;
+load data inpath '/user/cloudera/data/test' overwrite into table alunos parition(id);
+
+
+Selecao de dados / consultas: select * from <nomeTable>
+<where...>
+<group by...>
+<having ..>
+<order by.>
+<limit n>;
+ex:
+select * from cliente where state=sp group by city having population > 100 order  by client limit 10;
+select * from a joint b on a.valor = b.valor 
+
+views: create view <nomeView> as select * from nomeTable;
+
+
+Criar particao por dia (particao estatica): 
+alter table logs add parition(data='2019-21-02');
+
+
+Criar particao dianmico (no momento de insert):
+insert overwrite table user_cidade partition (cidade) select * from user;
+padrão nao ta aivoa, para poder ativar dinamica:
+			set hive.exec.dynamic.partition = true;
+			set hive.exec.dynamic.parittion.mode = nonstrict;
+			
+visualizar patições: show paritions user;
+
+excluir partições: alter table nome_table parition(city='SP');
+
+alter nome particao: alter table nome_table parition <nome_antigo> rename to partition <novo_nome>;
+
+
+repar particao: msck repair table nomeTable
+
+
+
+----========== comprenssao: SET hive.exec.compresss.output=tture;
+                            SET mapred.olutput.compression.codec=codec;
+							Set mapred.output.compression.type=BLOCK;							
+							
+
+
+stored as <formatoArquivo> tblproperties('formatoArquivo.compress'='CompressaoArquivo'); --- bzip, bzip2, snappy
+
+ex: 
+create table user(
+id int,
+name string,
+age int
+)
+partitioned by (data string)
+clustered by (id) into 256 buckets
+stored as parquet tblproperties('parquet.compress'='SNAPPY');
+
+
+------------------------============= SCOOP ================
+
+copiar do local para container: $ docker cp input/exercises-data/db-sql/ database:/<diretoro-que-quero-enviar>
+
+acessar container database:$ docker exec -it database bash
+
+instalar banco teste: 1. entrar no diretorio:  cd /db-sql/
+                      2. criar o banco e tabelaas :$ mysql -h localhost -u root -psecret < employees.sql
+					  3. conectar no mysql: $ mysql -h localhost -u root -psecret
+					  
+
+Criar diretorio e bando sakila: 1. cd /db-sql/sakila/
+                                2.$ mysql -psecret < sakila-mv-schema.sql
+								3.$ mysql -psecret < sakila-mv-data.sql
+								
+
+verificar versao: sqoop version
+
+listar todos os comandos: sqoop help
+
+ajuda de um comando: sqoop help import
+
+importar todas as tabelas de um banco: sqoop import-all-tables 
+
+
+conectar ao banco: --connect jdbc:mysql:// \
+                   --username usuario \
+				   --password senha
+				   
+listar banco de dados: sqoop list-database \
+                   --connect jdbc:mysql://database \
+                   --username usuario \
+				   --password senha
+
+listar tabelas:    sqoop list-tables \
+                   --connect jdbc:mysql://database/employees \
+                   --username usuario \
+				   --password senha
+
+consulta tabelas:   sqoop eval \
+                   --connect jdbc:mysql://database/employees \
+                   --username usuario \
+				   --password senha \
+				   --query "SELECT * FROM employees LIMIT 15"
+				   
+criar tabelas:      sqoop eval \
+                   --connect jdbc:mysql://database/employees \
+                   --username usuario \
+				   --password senha \
+				   --query "create table setor(cod int(2), name varchar(30))"
+				   
+inserir  tabelas:   sqoop eval \
+                   --connect jdbc:mysql://database/employees \
+                   --username usuario \
+				   --password senha \
+				   --query "insert into setor values(1, 'vendas')"
+
+
+importar bando para HDFS:    sqoop import 
+							--connect jdbc:mysql://database \
+						    --username usuario \
+						    --password senha \
+							
+importart uma tabela do bando para HDFS:    sqoop import --table employees \
+											--connect jdbc:mysql://database/employees \
+											--username usuario \
+											--password senha \
+											
+importart uma coluna da tabela do bando para HDFS:    sqoop import --table employees \
+													--connect jdbc:mysql://database/employees \
+													--username usuario \
+													--password senha \
+													--columns "id,last_name"
+													
+importart linhas da tabela do bando para HDFS:    sqoop import --table employees \
+												--connect jdbc:mysql://database/employees \
+												--username usuario \
+												--password senha \
+												--where "state='SP'"
+
+delimitadores: 'qualquer', \b (backsapce), \n (newline), \t (tab), \0 (null)
+
+
+
+Criar job: sqoop job --create myjob 
+                     --import --table employees \
+					--connect jdbc:mysql://database/employees \
+					--username usuario \
+					--password senha \
+					--where "state='SP'"
+
+verificar job: sqoop job --list-database
+
+ver detalhes do job: sqoop job --show myjob
+
+executar job: sqoop job --exec myjob
+
+deleter job: sqoop job --delete myjob
+
+
+carga incremental em dados existe no hdfs:
+sqoop import ..... --append --where 'id_venda > 10'
+
+carga incremental apenas novos:
+sqoop import .... --incremental append \
+--check-column id_venda \  --> seeria a chave primaria
+--last-value 50   ---> apartir de qual valor.
+
+Carga incremental atualizar apenas os dados novos:
+sqoop import .... incremental lastmodified \
+--merge-key data_id \   ---> cahve primaria
+--check-column data_venda \  ---> campo para checar
+--last-value '2021-01-18'   ----> apartir deste valor.
+
+
+---------------==================== HBASE ======================
+
+ACESSAR: docker exec -it hbase-master bash
+
+versao: hbase version
+
+executar: hbase shell
+
+ver estatisticas e se ativo: status
+
+informacoes de user: whoami
+
+criar tabela: create 'nome', 'familia'
+
+inserir : put 'nometabela','chave','familia:coluna','valor'
+ex: put 'clientes', 'emiranda', 'endereco:cidade', 'BH'
+
+
+alterar é outro insert : put 'nometabela','chave','familia:coluna','valor'
+ex: put 'clientes', 'emiranda', 'endereco:cidade', 'MG'
+
+consultas pela chave é get , pela tabela é scan:
+1 -  chave: get 'nomeTabela', 'chave'
+2 - familia de coluna: get 'clientes', 'emiranda', {COLUMNS=>['endereco']}
+3 - pela coluna: get 'clientes', 'emiranda', {COLUMNS=>['endereco:cidade']}
+4 - tabela: scan 'nomeTabela'
+5 - tabela por familia: scan 'clientes', {COLUMNS=>['endereco']}
+6 - tabela por coluna: scan 'clientes', {COLUMNS=>['endereco:cidade']}
+7 - tabela por uma chava: scan 'clientes',{STARTROW=>'chave', COLUMNS=>['familia:valor']}
+
+deletar coluna: delete 'nomeTabela','chave','familia:coluna'
+
+deletar familia de coluna: delete 'nomeTabela','chave','familia'
+
+deletar uma chave: deleteall 'nomeTabela','chave'
+
+Alterar para ter mais versões: alter 'nomeTabela',{NAME=>'familia',VERSIONS=>numero}
+
+alterar para deletar familia: alter 'nomeTabela','delete'=>'familia'
+
+contar nuemro registros: count 'clientes'
+
+
+
+------------================================== SPARK ==============
+
+
+inicializar cluster: 
+1- pyspark para python
+2- spark-shell para Scala
+
+inicializar cluster versao2: 
+1- pyspark2 para python
+2- spark2-shell para Scala
+
+Adicionar o jar para salvar tabelas Hive:
+sudo curl -O https://repo1.maven.org/maven2/com/twitter/parquet-hadoop-bundle/1.6.0/parquet-hadoop-bundle-1.6.0.jar 
+(Links para um site externo.)
+
+enviar arquivo: docker cp parquet-hadoop-bundle-1.6.0.jar spark:/opt/spark/jars
+
+acessar conteiner spark: docker exec -it spark bash
+
+Abrir spark: spark-shell
+
+DataFrame ler arquivos: val nomeDataFrame = spark.read.nomeFormato("arquivo")
+formatos:                                       arquivo:
+textFile .txt                                    "diretorio/"
+csv    .csv                                      "diretorio/*.log"
+jdbc   jdvcUrl, bd.tabela, connecProperties      "arq1.txt, arq2.txt"
+load e Parquet  .parquet                          "arq*"
+table  tabelaHive
+json  .json
+orc    .orc
+
+
+DataFrame ler arquivo2: val nomeDataFrame: spark.read.format("formato").\load("arquivo")
+
+val clienteDF = spark.read.json("cliente.json")
+Ações:
+count: conta as linhas  					  		 : clienteDF.count()
+first: primeira linhas  							 : clienteDF.first()
+take(n): as primeiras linhas em memoria com um array : clienteDF.take(5) 
+show(n): as primeiras linhas em memoria da tabela    : clienteDF.show()   caso precise:
+   mostrar os 5 primeiros, e ainda todas as casas : clienteDF.show(5, fale)
+collect: infomrações dos nos (pode estourar memoria) : clienteDF.collect()
+distinct: retirar duplicatas                         : clienteDF.distinct()
+printSchema(): visualizar estrutura dos dados.       : clienteDF.pirntSchema()
+
+write: salvar os dados  :
+       save ("arquvoParquet")
+	   json ("arquivoJson")
+	   csv ("arquvio.Csv")
+	   saeAsTable("tableHive")
+	      (/use/hive/warehouse)
+ex: dadosDf.write.save("outputData")  --> no caso ira para hdfs dfs -ls /user/cloudera/outputData
+ou caso queirar especificar o diretorio pode:
+			dadosDf.write.\
+			mode("append"). \     --> mode de adicionar dados.
+			option("path","/user/root"). \ --> especificando o path diferent de cloudera para o root.
+			saveAsTable("outputData")
+			
+
+Transformações (funçoes lase - preguiçosas- o catalistc otimiza por não precisar mostrar o dado:
+     select - selecionar os atributos : prodDF.select("nome", "qtd")
+	 where  - filtrar os atributos :    atd50DF.where("qtd > 50"
+	 order by - ordernar os dados por atributo: prodDF50ordDF = atd50DF.orderBy("nome")
+	 goupBy  - agrupar os dados por atributo: peopleDF.groupBy("setor").count()
+	 join: Mesclar dados
+	 limit(n) - limitar a quantidade de registros: 
+	 
+    prodDF.select("nome","qtd").where("qtd > 50").orderBy("nome")
+
+
+Apenas mostrar o atributo: prodDF.select("nome", "qtd").show()
+
+caso precise usar em operações: prodDDF.select($"nome", $"qtd"*0,1).show()
+
+Caso precise especificar o atributo de qual DF ou propriedades para ver: 
+      prodDF.where(prodDF("nome").startsWith("A")).show()
+	  
+
+
+Inferir o schema: val sDF = spark.read.option("inferSchema", "true").csv("setor.csv").printSchema()
+
+
+com cabeçario: spark.read.option("inferSchema", "true").option("header","true").csv("setor.csv").printSchema()
+
+
+Fazeer join -- campo para unir (a referencia/corresponde) é o id_c aqui: clienteDF.join(cidadeDF, "id_c").show()
+          ou              : clienteDF.join(cidadeDF, clienteDF("id_a") === cidadeDF("id_c"), "left_join").show()
+		  
+
+realizar SQL (tabalhando com DataFrame tambem aqui): val myDF = spark.sql("select * from people") --> defaul tabela hive
+                                                   : val testDF = spark.sql("select * from tabela")
+												   : val testDF = spark.sql("select * from parquet.'/bd/tabela.parquet'")
+												   : val testDF = spark.sql("select * from json.'/bd/tabela.json'")
+
+
+Criar Views Reculares (uma seção) : 
+                  DataFrame.createTempView(view-name) ---> se ja exist da erro
+				  DataFrame.createOrReplaceTempView(view-name) --> se ja exist re faz ela
+				  
+		val clienteDF = spark.read.json("clientes.json").createTempView("clienteView")
+		
+		val tabDf = spark.sql("select * from clienteView limit 10").show(10)
+				  
+Criar Views Global : DataFrame.createGlobalTempViews(view-name)
+
+
+
+ver bancos tem acesso: spark.catalog.listDatabases
+
+setar o banco padrao: spark.catalog.setCurrentDatabase(nomeBD)
+
+                                     .listTables
+									 .listColumns(nomeTablea)
+									 .dropTempView(nomeView)
+									 
+
+
+OPERAÇÕES SQL E DATAFRAME: Catalyst vai otimmizar igual, mas com dataframe ganhamos por maior separabilidade, 
+                                 extrutura mais o dataFrame.
+
+   -- transformações dataFrame
+   val testDf = spark.read.table("cliente").where("id=10255")
+   
+   -- sql queries
+   val testDf = spark.sql("SELECT * FROM cliente WHERE id = 10255")
+   
+  

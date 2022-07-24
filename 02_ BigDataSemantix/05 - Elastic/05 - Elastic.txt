@@ -1,0 +1,603 @@
+
+
+-------------=========================== ELASTIC =============================
+
+Iniciar: docker-compose up -d
+ 
+ parar : docker-compose stop
+ 
+ iniciar nova aula: docker-compose start
+ 
+ 
+ 
+ matar serviços: docker-compose down
+ 
+LIMPAR OS CONTEINERS DO DISCO:   docker-compose 
+
+LIMPAR VALUME: docker volume prune
+
+LIMPAR NETWORK: docker network prune
+
+LIMPAR CONTEINER, VOLUME E NET: docker kill echo $(docker ps -a -q)
+
+LIMPAR AS IMAGENS: docker rmi echo $(docker images -a -q)
+
+LIMPAR TUDO (ai so com docker-compose up -d): docker system prune --all
+ 
+ 
+ 
+ --------------- INSTSALACAO ------------------------------
+ 
+ Executar os seguintes comandos, para baixar as imagens de Elastic:
+			docker pull docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+			docker pull docker.elastic.co/kibana/kibana:7.9.2
+			docker pull docker.elastic.co/logstash/logstash:7.9.2
+ 
+ 
+ setar: vm.mas_map_count minimo 262144, no power shell adm:
+   1. wsl -d docker-desktop
+   2. sysctl -w vm.max_map_count=262144
+ 
+ criar docker-compose.yml e arquivos de configuração para facilitar.
+ 
+
+ 
+ 
+ 
+ 
+Iniciar: docker-compose up -d
+ 
+ parar : docker-compose stop
+ 
+ iniciar nova aula: docker-compose start
+ 
+ 
+ Acesso conteinr Elasticsearch: docker exec -it elastic_elasticsearch_1 bash
+ 
+ Acesso conteiner Kibana: docker exec -it elastic_kibana_1 bash
+ 
+ Acesso container Logstash: docker exec -it elastic_Logstash_1 bash
+ 
+ 
+ 
+ 
+ Verificar se os nós estao funionando: curl -X GET "localhost:9200/_cat/nodes?v&pretty"
+ 
+ 
+ Acessar os servidores web: kibana: http://localhost:5601/
+                            Elasticsearch: http://localhost:9200/
+							
+							
+
+ ---------------------- Iniciar aula ---------------
+ 
+ setar: vm.mas_map_count minimo 262144, no power shell adm:
+   1. wsl -d docker-desktop
+   2. sysctl -w vm.max_map_count=262144
+   
+   
+ 
+ iniciar nova aula: docker-compose start
+
+
+ fim aula parar : docker-compose stop
+ 
+ Caso der erro ao Iniciar os conteiners, no Power Shell usar:
+		net stop winnat
+		docker start container_name
+		net start winnat
+
+ 
+ 
+ Verificar as informações do cluster através do browser: http://localhost:9200/
+ 
+ 
+ Acessar o Kibana através do browser: http://localhost:5601/
+ 
+ 
+ 
+ ---------=============================== Requisições para Elasticsearch  ====================================
+ 
+  tudo por requisições por json: http.
+  
+  HEAD, GET, POST, PUT, DELETE
+  
+  Exemplo de criar index: PUT localhost:9200/cliente/_create
+  
+  
+  Head: apenas cabeçalho
+    kibana: HEAD cliente/_doc/1
+	
+ Put: Criar ou reindexar um documento inteiro (_version)
+     PUT cliente/_doc/1
+	   {
+	     "nome":"Lucas",
+		 "idade":20,
+		 "conhecimento":"Windows, Office, Haddop, Elastic"
+	   }
+	   
+  Post: Criar um documento com _id ou atualizar docuemnto parcialmente
+        atualizar:
+		POST cliente/_update/1
+	   {
+	     "doc":{
+				"nome":"Joâo"
+		   }
+	   }
+	   
+	   Inserir com _id autoamtico:
+		POST cliente/_doc
+	   {
+	     "doc":{
+				"nome":"Marcos"
+		   }
+	   }
+	   
+ 
+   Delete : deletar um documento ou index
+       documento:
+	   DELETE cliente/_doc/1
+	   
+	   idex:
+	   DELETE cliente
+	   
+
+   GET: Buscar informações:
+     nó do elasticsearch (localhost:9200/): GET/
+	 
+	 totods documentos em um indice: GET cliente/_search
+	 
+	 Um documento em um indice: GET cliente/_doc/1
+	 
+	 Quantidade de documentos em um indice: GET cliente/_count
+	 
+	 Dados de docuemnto em um indice: GET cliente/_source/1
+	 
+	 
+	 
+	------================= Multiplas importações Simultaneas ========
+	
+ Blk API: varias oprações de indexação, exclusao em uma chamada. Mais velocidade.
+
+ POST_bulk
+ {"index": {"_index":"teste", /"_id":"1"}}
+ {"field1":"value1"}
+ {"delete":{"_index":"teste","_id":"2"}}
+ {"create":{"_index":"teste","_id":"3"}}
+ {"field1":"value3"}
+ {"update":{"_id":"1","_index":"teste"}}
+ {"doc":{"field2":"value2"}}
+ 
+ 
+Ver todos documentos: GET concessionaria2/_search
+
+
+	 ------================= API de Pesquisa ========
+	
+Buscar todos docmentos: GET cliente/_search
+
+Pesquisar algo em todos docuemntos: GET cliente/_serach?q=haddop
+
+Pesquisar em um atributo especifico: 
+      GET cliente/_search?q=nome:Jão
+	  GET cliente/_search?q=nome:João&q=idade:20
+	  
+	  ou
+	  
+	  GET cliente/_search?q=Hadoop
+	  {
+	   "query":{
+	      "match_all":{} ---> este aqui busca todos documentos.
+	   }
+	  }
+
+	 
+Pesquisar em multiplos indices: GET _all/_search?q=Windows
+
+
+Pesquisar em indices especificos: 
+      GET produto,cliente/_search?q=Windows
+	  GET produto,cliente/_count?q=Windows
+	     --- caso não tiver o indice ira aparecer: index_not_found_exception
+		 
+		 
+  Paginação: Size = numero de documentos, e From Documentos que ira visualizar.
+  
+  Limitar o numero de docuemntos: 
+      os 100 primeiros: GET cliente/_search?q=hadoop&size=100
+	  os 100 primeiros apartir de 500: GET cliente/_search?q=hadoop&size=100&from=500
+	  
+	  ou
+	  
+	  Ver os 10 primeiro documentos:
+	  GET cliente/_serarch?size=10
+	  {
+	    "from":0, "size":10,
+		"query":{
+		    "match_all":{}
+		 }
+	  }
+	  
+	  Ver os documentos 31 a 40 (quarta pagina):
+	  GET cliente/_serarch?size=10&from=30
+	  {
+	    "from":0, "size":10,
+		"query":{
+		    "match_all":{}
+		 }
+	  }
+	 
+	 
+	 Fórmula:
+	  Primeiro docmento da busca: From +1
+	  Ultimo documetno da busca: From + Size
+	  Página: From / Size +1
+	 
+     
+  
+  
+	 ------================= API de Índices =============================
+	 
+ Criação (Boa pratica cada shard ter entre 20 à 50GB -não é uma regra, precisa testar para ver 
+                valor ideal).
+ 
+    PUT TESTE --> o indice
+	{
+	  "setting":{
+	     "index":{
+		    "number_of_shards":1,  elastica que salva
+			"number_of_replicas":1 -- O elastica que salva e é bom esta em outros nós, diferente do shards.
+		 }
+	  },
+	 "mappings":{...}
+	 "aliases":{...}
+	}
+	 
+
+  Busacr indice: 
+  
+    GET teste  --> ver tambem se existe.
+	GET teste/_serarch --> retornar dados
+	GET teste/_settings ---> configurações
+	GET teste/_mapping --> mapeamento,schema do indice.
+	GET teste/_alias --> os alias associados 
+	GET teste/_stats --> Estaticas, doucmentos tem, tamanho...
+	
+	HEAD teste  --> ver tambem se existe.
+	
+	
+  Deletar:
+     
+	 DELETE teste1 --> deletar
+	 DELETE ind* ---> deletar todos que tem o nome iniciando em "ind"
+	 
+	 GET ind* --> Buscar todos documentos que tem o nome iniciando em "ind"
+	 
+	 HEAD ind* --> Ver se existe todos doucmentos  que tem o nome iniciando em "ind"
+	 
+	 
+  Fechamento e aberturas (bom usar o Frozen index)
+
+  POST teste/_close -- bloquea leitura e gravação. Mantem metados e diminui sobrecarga, mas nó deixar cluste 
+                          perte replicas, ai bom o Frozem index
+						  
+  POST test*/_close
+
+  POST teste/_open  
+  POST test*/_open
+
+   
+  
+  
+	 ------================= MAPEAMENTO (schema da tabbela em sql) =============================
+	 
+	 
+	 Ver o mapeamento: GET cliente/_mapping
+	 
+	 è possivel adicionar, mas para alterar so com Reindex.
+	 
+	 Ver um especifico:
+	            GET cliente/_mapping/field/conhecimento
+				GET cliente/_mapping/field/conhe*
+				GET cliente/_mapping/field/nome,conhecimento
+ 
+    Mapear todos: GET _mapping
+	
+	Exemplo de criação:
+	PUT cliente1{}
+	
+	PUT cliente1/_mapping/
+	{
+       "properties":{
+	      "nome":{"type":"text"},
+		  "idade":{"type":"long"},
+		  "conhecimento":{"type":"keyword"}
+	   }
+	}
+ 
+ 
+ 
+  
+	 ------================= MAPEAMENTO REINDEX =============================
+	 
+	Alterar o mapeamento, sendo, Configurar novo indice, 
+	  indexa o indice de entrada (source) para o destino (dest).
+	  
+	POST _reindex
+	{
+	 "source":{
+	   "index":"teste1"
+	 },
+	 "dest":{
+	   "index":"new_teste"
+	 }
+	}
+	 
+
+	 ------================= Queries e Filtros =============================
+	 
+	 GET cliente/_search
+	 {
+	  "query":{
+	     "term":{
+		   "nome":Jão"
+		 }
+	   }
+	 }
+	 	 
+		 melhor:
+		 
+    GET cliente/_search
+	 {
+	  "query":{
+	    "constant_score":{
+		   "filter":{
+		      "term":{
+		         "nome":Jão"
+		      }
+			}
+		 }	     
+	   }
+	 }
+ 
+ 
+   Pesquissar multiplos termos:
+    GET cliente/_search
+	 {
+	  "query":{
+	     "terms":{
+		   "idade":[30, 20]
+		 }
+	   }
+	 }
+ 
+ 
+   Bool Query:
+     Must = And
+	 Should = Or
+	 Must_not = Not and
+	 Filter = Filtrar mais dados antes de atender as outras clausulas
+	 
+	
+	 GET cliente/_search
+	 {
+	  "query":{
+	     "bool":{
+		  "must":[{...}],
+		  "must_not":[{...}],
+		  "should":[{...}],
+		  "filter":[{...}]
+	   }
+	 }
+ 
+ 
+ GET cliente/_search
+	 {
+	  "query":{
+	     "bool":{
+		    "should":{
+			  "terms":{
+		   "idade":[30, 20]
+		      }
+			}
+		  }	     
+	   }
+	 }
+ 
+ 
+   Conjunto de consultas, muitas consultas:
+   GET cliente/_search
+	 {
+	  "query":{
+	     "bool":{
+		    "must":[
+			  {"match":{"estado":"sp"}},
+			  {"match":{"ativo":"sim"}}
+			]
+		  }	     
+	   }
+	 }
+ 
+ GET cliente/_search
+	 {
+	  "query":{
+	     "bool":{
+		    "must":{"match":{"setor":"vendas"}}
+			"should":[
+			  {"match":{"tags":"imutabilidade"}},
+			  {"match":{"tags":"larga escala"}}
+			],
+			"must_not":{"match":"{"nome":"inativo"}}
+		  }	     
+	   }
+	 }
+ 
+ 
+ 
+	 ------================= Ordem de Busca =============================
+	 
+	 
+    Relevancia: Quantas vezes o termo aparece no atributo: Mas vezes
+	            tamanho do atributo: menor melhor
+				tamanho do termo : melhor menor
+				quantas vezes o termo aparece em todos os docuemntos: menor melhor.
+				
+				
+	exc:
+	GET cliente/_search
+	{
+	 "query":{
+	  "match":{
+	    "conhecimento":{
+          "query":"sqoop hive",
+		  "operator":"and"  ---> aqui tem que ter sqoop e hive, não so um dos dois.
+		}		
+	  }
+	 }
+	}
+	
+	ou 50% das informações:
+	GET cliente/_search
+	{
+	 "query":{
+	   "match":{
+	    "Hobby":{
+		 "query":"sqoop hive impala",
+		 "minimum_should_match":"50%"
+		}
+	   }
+	 }
+	}
+	
+	ou 50% das informações por numero:
+	GET cliente/_search
+	{
+	 "query":{
+	   "match":{
+	    "Hobby":{
+		 "query":"sqoop hive impala",
+		 "minimum_should_match":2   ---> ter pelo menos duas das palavras.
+		}
+	   }
+	 }
+	}
+ 
+  -- multiplos atributos : este aqui não pode usar com operador e minimum_should_match
+  GET cliente/_search
+  {
+   "query":{
+     "multi_match":{
+	  "query":"pinheiros",
+	  "type":"most_fields",
+	  "fields":["endereco","cidade","estado"]
+	 }
+   }
+  }
+ 
+ 
+ 
+	 ------================= Consultas por Intervalo =============================
+	 
+ Atributos para controlar o intervalo:
+ gte - Maior ou igual que 
+ gt - Maior que
+ lte - Menor ou igual que
+ lt - Menor que
+ 
+ ex: Mairo ou igual a 10 anos:
+  GET cliente/_search
+  {
+   "query":{
+    "range":{
+	 "idade":{
+	  "gte":10
+	 }
+	}
+   }
+  }
+  
+  ex: Mairo ou igual a 10 anos e menor ou iqual a 24:
+  GET cliente/_search
+  {
+   "query":{
+    "range":{
+	 "idade":{
+	  "gte":10,
+	  "lte":25
+	 }
+	}
+   }
+  }
+ 
+ 
+ 
+	 ------================= Consultas por Intervalo de Tempo  =============================
+	 
+ Propriedades com data
+    "format":"dd/MM/yyyy||yyyy"
+	"time_zone":"+3:00"
+	
+	y - Anos
+	M - Meses
+	w - Semanas
+	d - Dias
+	H - Horas
+	h - Horas
+	m - Minutos
+	s - Segundos
+	
+	exemplos:
+	Now - Agora
+	+1d: Adiciona 1 dia
+	-1M: Subtrai 1 mês.
+	
+	
+	
+	ex: Intervalo diferente:
+	GET cliente/_search
+	{
+	 "query":{
+	  "range":{
+	   "data":{
+	    "gte":"01/01/2012",
+		"lte":"2013",
+		"format":"dd/MM/yyyy||yyyy" ---> é possivel pois estamos passando os dois foramtos aqui.
+	   }
+	  }
+	 }
+	}
+	
+	Buscar todos de ontem até hoje:
+	GET cliente/_search
+	{
+	 "query":{
+	  "range":{
+	   "data":{
+	    "gte":"now-1d", ---> Ontem
+		"lte":"now" ---> hoje
+	   }
+	  }
+	 }
+	}
+	
+	Buscar no campo padrao de tempo do Elasticsearch - Timestamp:
+	GET cliente/_search
+	{
+	 "query":{
+	  "range":{
+	   "@timestamp":{
+	    "gte":"2015-08-04T11:00:00", 
+		"lte":"2015-08-04T12:00:00" 
+	   }
+	  }
+	 }
+	}
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

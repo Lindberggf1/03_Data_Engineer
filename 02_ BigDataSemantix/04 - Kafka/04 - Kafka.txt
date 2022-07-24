@@ -1,0 +1,734 @@
+
+
+-----------======================== KAFKA ==================== 
+
+
+------======================== INSTALAÇÃO ==================
+
+ Versoes: docs.confluent.io/current/installation/versions-interoperability.html
+
+ Confluent Community: 
+        docker: docs.confluent.io/current/quickstart/cos-docker-quickstart.html
+		local: docs.confluent.io/current/quickstart/cos-quickstart.html
+		
+		
+ Confluent Enterprise: 
+        docker: docs.confluent.io/current/quickstart/ce-docker-quickstart.html  ----> vamos usar este aqui
+		local: docs.confluent.io/current/quickstart/ce-quickstart.html
+		
+		
+ Cloud: www.confluent.io/confluent-cloud
+ 
+ 
+ Iniciar: docker-compose up -d
+ 
+ parar : docker-compose stop
+ 
+ iniciar nova aula: docker-compose start
+ 
+ matar serviços: docker-compose down
+ 
+LIMPAR OS CONTEINERS DO DISCO:   docker-compose 
+
+LIMPAR VALUME: docker volume prune
+
+LIMPAR NETWORK: docker network prune
+
+LIMPAR CONTEINER, VOLUME E NET: docker kill echo $(docker ps -a -q)
+
+LIMPAR AS IMAGENS: docker rmi echo $(docker images -a -q)
+
+LIMPAR TUDO (ai so com docker-compose up -d): docker system prune --all
+ 
+ 
+ Executar comandos no container: docker exec -it broker bash  --> broker é nosso cluster
+ 
+ Server do kafka: docker exec -it broker bash
+ 
+ 
+ Confluent Control Center: http://localhost:9021
+ 
+ 
+ Caso der erro ao Iniciar os conteiners, no Power Shell usar:
+	net stop winnat
+	docker start container_name
+	net start winnat
+	
+Pra achar o ip, você pode jogar o seguinte no terminal: 
+
+ip addr | grep eth0
+
+O primeiro ip que aparecer vai ser o endereço que vc vai usar no lugar do localhost. Também tem 
+
+cat /etc/resolv.conf
+
+Fonte: https://docs.microsoft.com/en-us/windows/wsl/networking
+
+
+------------------------------------- Arquitetura kafka -----------
+
+ kafka: produto -> broker /zookeper -> consumidor
+    
+	   broker (ou servidor - armazena dados) : tem topicos dividos em partições(nestes as mensagens). 
+	   zookeper: coordena
+	   
+	   
+ Bom ter um lider na partiçõe uma lider e outras replicas que ficaram em brokes (servidores diferentes).
+ 
+  PRODUTORES:  confiramação escrita(propriedade acks): 0 - sem confirmação escrita (ambiente que não precisa de certeza)
+                                                       1 - Confirmação de escrita no Lider(padrao)
+								                       all - confirmação de escrita no lider e nas replicas (ISR)
+				
+	
+    	
+ ----- gerenciar topicos por lina comando:
+   docker exec -it broker bash
+   
+   kafka-topics --versions : versao
+   
+   listar topicos: kafka-topics --bootstrap-server localhost:9092 -listar
+   
+   criar topico: kafka-topics --bootstrap-server localhost:9092 --create --topic msg-cli  --partitions 2 --replication-factor 1
+   
+   descrever topico: kafka-topics --bootstratp-server localhost:9092 --topic nomeTopico --describe 
+   
+   deletar topico: kafka-topics --bootstratp-server localhost:9092 --topic nomeTopico --delete
+   
+   
+   
+   enviar dados: kafka-console-producer --broker-list localhost:9092 --topic nomeTopico
+   
+   enviar dados para todos reconhecerem (leader e ISR): 
+       kafka-console-producer --broker-list localhost:9092 --topic nomeTopico --producer-propety acks=all
+
+
+   Receber mensagens em tempo real:
+   kafka-console-consumer --bootstrap-server localhost:9092 --topic nomeTopico
+   
+   Receber mensagens desde a criação do topico:
+   kafka-console-consumer --bootstrap-server localhost:9092 --topic nomeTopico --from-beginning
+   
+   Criar grupo de consumidores:
+   kafka-console-consumer --boostrap-server localhost:9092 --topic nomeTopico --group nomeGroupo
+   
+   
+   listar grupos de consumidores:
+     kafka-consumer-groups --bootstrap-server localhost:9092 -list
+	 
+	descrever grupo:
+	  kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group nomeGroupe
+	  
+	Redefinir o deslocamento do mais antigo (desde o inicio):
+	 kafka-consumer-groups --bootstrap-server localhost:9092 --group nomeGroup --reset-offsets --to-earliest --execute --topic nomeTopico
+	 
+	Alterar o deslocamento para um determinado (avançar para 2 aqui, se estava no 10 vai para o 12):
+	  kafka-consumer-groups --bootstrap-server localhost:9092 --group nomeGroup--reset-offsets --shift-by 2 --execute --topic nomeTopico
+	  
+	
+ 
+ ---------------============================================= CONTROLE CENTER E KSQL =================
+ 
+ Disponibilidade: Maxia: fator replicação -3
+                         Minimo sincronizacao -1
+						 
+				 equilibrada:fator replicação -3
+                             Minimo sincronizacao -2
+				 
+				 
+				 Moderada: fator replicação -2
+                           Minimo sincronizacao -1
+				 
+				 
+				 baixa (nao usar em produção): fator replicação -1
+                                               Minimo sincronizacao -1
+	          
+
+
+ ----- ksql: docker exec -it ksqldb bash
+ 
+ visualizar topicos: list topics;
+ 
+ mostrar conteudo do topico em tempo real: print "nomeTopico" proPriedads;
+ 
+       propriedas pode ser: from geginning;
+	                        interval;
+							limit;
+							
+	ex: print "topic-produto" from beginning interval 5 limit 10;
+	
+	
+comand para visualizar Streams: list streams;
+
+Criar Stream: 
+      create stream nomeStream (campo tipo, campo tipo, .....) with (kafka_topic='nomeTopico', value_format='formato', Key='campoChave', TIMESTAMP='campoTimestamp...');
+	  
+	      formato pode ser: DELIMITED (, CSV)
+		                    JSON
+							AVRO
+							
+		
+          Tipos: 
+		        BOOLEAN, INTERGER OU INT, BIGINT, DOUBLE, VARCHAR OU STRING, Array, Map, struct...
+				
+   ex: informações para passar:
+		     - {"nome":"Rodrigo", "cidade":"Sao Jose dos campos"}
+			 - {"nome":"Rodrigo", "cidade":"Sao Paulo"}
+		  
+		  Criar topico com as informações:
+		      create stream cad_str_csv (nome varchar, cidade varchar) with (kafka_topic='cadastrojson', value_format='json');
+			  
+			  
+
+ Alterar csv/json para Avro bom para serilização, separa dado de schema:
+    ex CSV para avro:
+       create stram cad_avro_csv with(kafka_topic='cadastro-avro', value_format='avro') as select * from cad_str;
+	 
+	ex Json para avro:
+       create stram cad_avro_json with(kafka_topic='cadastro-avro', value_format='avro') as select * from cad_str;
+	   
+	   
+
+ Visualiar dados Stream: select campo, ... campo from nomeStrema 
+        ex: select nome from cad_str;
+		    select * from cad_str limit 10;
+			
+
+Visualizar a estrutura do Stream: describe nomeStrema
+                                  describe extended nomeStream
+								  
+	
+SEtar propriedades: set proriedade = valor
+   ex.: setar para visualizar os dados desde o inicio : set 'auto.offset.reset' = 'earliest';
+
+Desfazer propriedade: unset propriedade = valor
+   ex.: desfazer configuração: unset 'auto.offset.reset'
+   
+   
+   
+ Insert: insert into streamName ou tableName (colunnName, ...) values (value, .....);
+      ou 
+	    inset into stream_name
+		 select select_expr,....
+		  from from_stream
+		  where conditition...
+		  partition by colunnName ;
+		  
+	ex.: insert into foo (rowtime, rowkey, key_col, col_a) values (1234, 'key', 'key', 'a');
+	
+	
+ Deletar steram: drop stream nomeStream
+ 
+ Deletar uma Stream e topico: drop stream nomeStream delete topic;
+                              drop stream if exists nomeStream delete topic;
+							  
+							  
+
+Agregações: count, mas, min, sum, topk, topkdistinct.
+
+
+Contar a quantidade de linhas de um campo stram: select cidade, count(*) from cad_str group by cidade; 
+
+
+Contar a quantiad de linahs de todo o topico: criar um campo setado para 1 em todos os registros
+
+  ex: create stream novoStram as Select 1 as unit from nomeStreamParaContar; 
+     em seguida: select count(unit) from novoStream group by unit;
+	 
+
+Correção - Exercícios de KSQL
+KSQL
+
+1. Criar o tópico msg-usuário-csv
+
+kafka-topics --bootstrap-server localhost:9092 --create --topic msg-usuario-csv
+
+
+2. Criar um produtor para enviar 3 mensagens contendo id e nome separados por virgula para o tópico msg-usuário-csv
+
+kafka-console-producer --broker-list localhost:9092 --topic msg-usuario-csv
+
+1
+joao
+2
+jose
+3
+maria
+
+
+3. Visualizar os dados do tópico msg-usuário-csv
+
+list topics;
+
+kafka-topics --bootstrap-server localhost:9092 --topic msg-usuario-csv --describe
+
+
+4. Criar o Stream usuario_csv para ler os dados do tópico msg-usuário-csv
+
+create stream usuario_csv(nome varchar, id int)
+with(kafka_topic='msg-usuario-csv', value_format='delimited');
+
+
+5. Visualizar o Stream usuario_csv
+
+select * from usuario_csv
+
+
+6. Visualizar apenas o nome do Stream usuario_csv
+
+select nome from usuario_csv
+
+
+       -----------------=============================== KSQL Datagen =====================
+	   
+	   
+  Gerar dados de testes: Para testar ambientes de dev.
+  
+  acessar: docker exec -it ksql-datagen bash
+           ksql-datagen <argumento>
+		   
+ex.: ksql-datagen help
+
+
+ Iniciar produtor: ksql-datagen \
+                   bootstrap-server=broker 29092 \
+				   quickstart=<orders, users, pageviews> \ ----> quais dados vao pegar
+				   schema=<ArquivoAvro> \
+				   schemaregistryUrl=schema-registry:8081 \
+				   key-format=<avro, json, kafka ou delimited> \
+				   value-format=<avro, json, ou delimited> \
+				   topi=<nomeTopico> \
+				   key=campoChave \
+				   iterations=numeroLinhas \
+				   msgRate=taxaMsg/segundo 
+				   
+				   
+podemos criar topico antes com kafka topics ou fazer direto a geração de dados:
+    ksql-datagen bootstrap-server=broker:29092 schemaRegistryUrl=schema-registry:8081 quickstart=orders topic=order_topic
+	
+
+Visualizar dados no topico: print "orders_topic"
+
+
+Criar o stream:
+ create stream orders_filtrada (orderid INT, orderunits Double, address Struct <city Varchar, zipcode INT>, ordertime Varchar)
+   with (KAFKA_TOPIC='orders_topic', VALUE_FORMAT='JSON');
+   
+Visualização de dados Stream:
+    select * from orders_filtrada:
+
+KSQL Datagen
+
+1. Criar o tópico users com os dados do ksql-datagen
+
+quickstart=users
+topic=users
+
+docker exec -it ksql-datagen bash
+
+ksql-datagen
+
+ksql-datagen bootstrap-server=broker:29092 schemaRegistryUrl=schema-registry:8081 quickstart=users topic=users
+
+
+2. Visualizar os dados do tópico no Ksql
+
+print "users"
+
+list topics;
+
+show streams;
+
+show tables;
+
+
+3. Criar o stream users_raw com os dados do tópico users com as seguintes propriedades
+
+kafka_topic='users’
+value_format='JSON’
+key = 'userid’
+timestamp='viewtime’
+
+CREATE STREAM users_raw WITH (KAFKA_TOPIC='users', VALUE_FORMAT='JSON', KEY='userid', TIMESTAMP='viewtime');
+
+ou
+
+CREATE STREAM users_raw (userid INT) WITH (KAFKA_TOPIC='users', VALUE_FORMAT='JSON', KEY='userid', TIMESTAMP='viewtime');
+
+
+4. Visualizar a estrutura da Stream  users_raw
+
+show streams;
+
+show tables;
+
+
+5. Visualizar os dados da Stream  users_raw
+
+select * from users_raw;
+
+
+6. Repetir todo o proceso para o tópico pageviews
+
+ksql-datagen quickstart=pageviews topic= pageviews
+
+ksql-datagen bootstrap-server=broker:29092 schemaRegistryUrl=schema-registry:8081 quickstart=pageviews topic=pageviews
+
+print "pageviews"
+
+CREATE STREAM pageviews_raw WITH (KAFKA_TOPIC='users', VALUE_FORMAT='JSON', KEY='userid', TIMESTAMP='viewtime');
+
+ou
+
+CREATE STREAM pageviews_raw (userid INT) WITH (KAFKA_TOPIC='users', VALUE_FORMAT='JSON', KEY='userid', TIMESTAMP='viewtime');
+
+show streams;
+
+show tables;
+
+select * from pageviews_raw;
+
+
+
+	-----------------================== 
+	
+	schema Registry: camada de armazenamento distribuido para esquema avro, separa schema dos dados, atribui id exclusivo para cada esquema.
+	  feitas por API REST.
+	  
+	
+	Avro: escrito em json, formato binário compacto (mais leve que json). 
+	
+	
+	Armazena o esquema atraves de JSON:
+	   ex.:
+	     Campos: id, nome, status
+		 
+		 Arquivo: nome.avsc
+		  {
+			"Type":"record"  ---> tipo do schema
+			"Name":"nomes",  --> Nome do schema
+			"Namespace":"example.avro" ---> Equivalente ao package em java
+			"Doc":"Exemplo de um esquema" ---> Documentação do esquema
+			"Aliasses": "nomes2",  --->  Outros nomes para o schema
+			"Fields":[
+						{"name":"id", "type":"int"},
+						{"name":"nome","type":"string"},
+						{"name":"status",   ---> Nome do campo
+						   "Doc":"Campo de status",   ---> Documentação do campo
+						   "type":"boolean",   ---> Tipo do campo
+						   "default":true}   ---> Valor padrão para o campo
+			         ]
+		  }
+	
+	
+	 Avro Console Consumer:
+	   docker exec -it schema-registry bash
+	   
+	 kafka-avro-console-consumer --topic test-avro --bootstrap-server broker:29092 --property schema.registry.url=http://localhost:8081 --from-beginning
+	 
+	 
+	 
+	Avro Console Producer: aqui passa o squema como argumento tambem.
+	  comando: 
+	  bom usar o kafk topics para criar antes o topico --topic test-avro
+	  kafka-topics --bootstrap-server localhost:9092 --topic test-avro --create --partitions 3 --replication-factor 1
+
+      kafa-topics --bootstrap-server localhost:9092 --topic test-avro --describe
+	  
+	  
+	   kafka-avro-console-producer --broker-list borker:29092 --topic test-avro --property schema.registry.url=http://localhost:8081 
+	     -- property value.schema='{"type":"record", "name":"myrecord", "fields":[{"name":"id", "type":"int"}, {"name":"nome", "type":"string"}]}'
+		 
+		 {"id":1, "nome":"Rodrigo"}
+		 {"id":2, "nome":"Augusto"}
+		 
+	Caso tiver aque adicionar, evoluir o schema com um campo:
+		kafka-avro-console-producer --broker-list borker:29092 --topic test-avro --property schema.registry.url=http://localhost:8081 
+	     -- property value.schema='{"type":"record", "name":"myrecord", "fields":[{"name":"id", "type":"int"}, {"name":"nome", "type":"string"},
+		 {"name":"cidade","type":"string", "default":"null"} ----> colocamos o 'default' para os anteriores receber este valor, desde modo serem corrigidos.
+		 ]}'
+		 
+		 {"id":1, "nome":"Rodrigo","cidade":"null"}
+		 {"id":2, "nome":"Augusto","cidade":"null"}
+		 {"id":3, "nome":"Ana", "cidade":"sp"}
+		 {"id":4, "nome":"Marcos", "cidade":"sp"}
+        	
+		 
+	Strema para Avro:
+	
+	    precisa apena configurar as propriedade do Strem, o esquema ja esta no topico do Kafka.
+		  ex.:
+		   create stream str_test-avro with(kafka_topic'test-avro', value_format='avro');
+		   
+		 
+		 
+	Schema Registry
+
+1. Visualizar os dados do tópico users;
+
+cd kafka
+
+docker-compose up -d
+
+docker exec -it schema-registry bash
+
+pint "users";
+
+list topics;
+
+ 
+
+2. Criar o tópico users-avro
+
+kafka-topics --bootstrap-server localhost:9092 --topic users-avro --create --partitions 3 --replication-factor 1
+
+kafa-topics --bootstrap-server localhost:9092 --topic users-avro --describe
+
+a) Usar o kafka-avro-console-producer para enviar 1 mensagem
+
+kafka-avro-console-producer --broker-list localhost:29092 --topic users-avro --property schema.registry.url:http://localhost:8081 
+--property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},
+{"name":"nome","type":"string"}]}'
+
+
+b) Usar o kafka-avro-console-consumer para consumir a mensagem
+
+kafka-avro-console-consumer --topic users-avro --bootstrap-server broker:29092 
+--property schema.registry.url=http://localhost:8081 --from-beginning
+
+
+c) Visualizar o esquema no Control Center
+
+
+3. Visualizar os dados do users-avro no KSQL
+
+docker exec -it ksql-server ksql http://ksqldb-server:8088
+
+list streams;
+
+describe users-avro;
+
+
+4. Criar um stream users-avro1 para o tópico users-avro
+
+create stream users-avro1 with (kafka_topic='users-avro', value_format='avro');
+
+
+5. Visualizar os dados do stream users-avro1
+
+SET 'auto.offset.reset'='earliest';
+
+select * from users-avro1 emit changes;
+
+6. Usar o kafka-avro-console-producer para adicionar um novo campo chamado “unit” com valor padrão “1”
+
+kafka-avro-console-producer --broker-list localhost:29092 --topic users-avro --property schema.registry.url:http://localhost:8081 
+--property value.schema='{"type":"record","name":"myrecord","fields":[{"name":"id","type":"int"},
+{"name":"nome","type":"string"},{"name":"unit","type":"int","default":"1"}]}'
+
+
+7. Usar o kafka-avro-console-consumer para consumir as mensagens
+
+kafka-avro-console-consumer --topic users-avro --bootstrap-server broker:29092 
+--property schema.registry.url=http://localhost:8081 --from-beginning
+
+
+8. Comparar os esquemas do users-avro no Control Center
+
+
+9. Visualizar os dados no stream do tópico users-avro
+
+kafa-topics --bootstrap-sever localhost:9092 --topic users-avro --list
+
+kafa-topics --bootstrap-sever localhost:9092 --list
+
+list streams;
+
+SET 'auto.offset.reset'='earliest';
+
+select * from users-avro emit changes;
+
+
+
+
+
+
+--------------====================================== Kafka Connect e Clients ====================
+
+ Estrutura para conectar o kafka a outros sistemas
+ 
+    principais: 
+	  Source Connectar (produtor): Evniar dados do sistema externo para os topicos do kafka
+	  Sink connector (consumer): Enviar os dados do topico kafka para o sistema extenr
+
+
+   Pode ver em para ver conectores: https://www.confluent.io/hub
+
+
+   para instalar o componete:
+      docker exec -it connect bash
+	  
+	  confluent-hub install <componete>
+	  
+	  
+	  
+	Para visuaalização das carcteriscas para cada linguabem e cliest: https://www.confluent.io/5.2.2/clients/
+	
+	
+	
+	
+	para usar cloud com um cloud : Confluent.io/confluent-cloud
+	
+	
+	cobram por entrada (produto), saida (consum) e o cluster.
+	
+	
+	exem.:
+	   cluster 1
+	      entrada : 100gb = 100*0.11 = $11
+		  saida: 200 gb = 200*0.11 = $22
+		  armazenamento: 500gb = 500*0.10 = $50
+		  nuvem gcp            total: $83
+		   
+		  
+		cluste 2
+		  entrada : taxa transferencia 1mb/s  --- 1mb/s = 86400s/dia   86400*30= 2531GB*0.11 = $278,41
+		  saida: taxa tranferencia 1mb/s --- 1mb/s = 86400s/dia   86400*30= 2531GB*0.11 = $278,41
+		  aramazenamento: politica retenção de 7 dias --- 1mb/s = 86400s/dia   86400*7*3replicas= 1772 GB*0.10 = $177,20
+		  nuvem gcp                 Total: $734.02
+		   
+		  
+		 
+    kafka Consumidor - PARAMETROS IMPORTANTES	
+	 group.id - Nome do grupo de consumo
+	 auto.offsetoreset - Indica o que o kafka fara quando nao temos um offse inicial (padrão latest)
+	     - earliest --- desde inicio mensagem 
+		 - latest  -- aparti da ultima mensagem 
+	 enable.auto.commit - Indica se o commit do offset sera automatico. (pardão true)
+	 max.pll.interval.ms - Intervalo máximo de buscade dados. (padrão 5 minutos)
+	 max.poll.recores - Máximo de mensagens que são retornadas no poll (padrão 500)
+	 fetch.max.bytes - Quantidade de dados que "capturadas" em cada poll (padrão 52 mb)
+	 
+	 
+	kafka Produtor - PARAMETROS IMPORTANTES
+	  linger.ms - Tempo de envio (padrão 0)
+	  acks - Confirmação de gravação (padrão 1)
+	  retries - Tentativas (padrão 2147493647)
+	  comporession.type - Tipo de compressão (padrão none)
+	  max.in.flight.request.per.connection - Mensagens em voo (padrão 5)
+	  
+	
+  -----------======================= OTIMIZAÇÕES PARA VER NO CLUSTER ============
+  
+  TEM EM : https://www.confluent.io/wp-content/uploads/Optimizing-Your-Apache-Kafka-Deployment-1.pdf
+  
+  Pode ser para:
+     1. Troughput
+	   
+	     Produtor:
+		   linger.ms: aumente para 10 - 100 (padrao 0)
+		   compression.type = lz4 (padrao none)
+		   acks=1 (padrao 1)
+		   retries =0(padrao 0)
+		   batch.size: aumente para 1000000 - 200000 (padarao 16384)
+		   
+         Consumidor:
+            fetch.min.bytes: aumente para ~100000 (default 1)
+			
+	 2. Latência
+	   
+	     Produtor:
+		   linger.ms: 0 (padrao 0)
+		   compression.type = none (padrao none)
+		   acks=1 (padrao 1)
+		   
+         Consumidor:
+            fetch.min.bytes: 1 (default 1)
+			
+	 3. Durabilidade
+	   
+	     Produtor:
+		   replication.factor: 3
+		   acks=all (padrao 1)
+		   retries = 1 ou mais (padrao 0)
+		   max.in.flight.requests.per.connection=1 (padrao 5) -- previnir mensagens fora de ordem. 
+		   
+         Consumidor:
+            enable.auto.commi=false (padrao true)
+		   
+         Broker (pode fazer no docker estes):
+            default.replication.factor=3 (padrao 1)
+			auto.create.topics.enable=false (padrao true)
+			min.insync.replicas=2 (default 1)
+			unclean.leader.election.enable=false (defalt true)
+			
+	 4. Disponibilidade
+		   
+         Consumidor:
+            session.timeout.ms: Baixar o quanto possivel (default 10000)
+		   
+         Broker (pode fazer no docker estes):
+            unclean.leader.election.enable=true (default true)
+			min.insync.replicas=1 (default 1)
+			default.replication.factor=3 (padrao 1)
+	 
+  
+  
+  ------------========================== MELHORES PRATICAS PARA CLUSTER KAFKA ===================================
+  
+   1. Numero de partições: sempre ser multiplos do número de brokers, e bom testar para saber quantas são necessario. 
+      comandos para testes:
+	    kafka-conumer-perf-test.sh
+		kafka-producer-perf-test.sh
+		kafka-run-classs.sh kafka.tools.TestEndToEndLatency
+   
+   2. Balanceamento das partições: Importante entender o comportamento dos seus dados.
+        - Manter um uniformidade de crescimento entre as partições: tentar ter um numero de offset iguais.
+		- O tempo de retenção do kafka, tentar manter por volta de 25gb (facilita o gerenciamento):
+		   - SLA da aplicação 
+		   - Necessidade de reprocessamento
+		   - Regra de negócio / Complice
+   
+   3. Não aplicar compressão ou criptografia no disco do Broker, Aplicar a compressão ou criptografia na Mensagem.
+   
+   4. Utilizar o monitoramento do Kafka:
+      - Utilização de disco
+	  - utilização CPU
+	  - I/O de Rede
+	  - Utilização de Memoria
+	  - I/O de Disco
+	  - Arquivos abertos
+	  
+	  
+	 
+  
+  ------------========================== VER AGORA PARA ESTUDAR MAIS ===================================
+  
+   Livro kafka: The definitive Guide 
+    link: https://www.confluent.io/resources/kafka-the-definitive-guide
+	
+	
+   Buscar e ver os exemplos de clints no Githu confluent
+     link: https://github.com/confluentinc
+	 
+   
+   Treinamentos Global Training da Confluent, ATE CERTIFICAÇÃO GRATIS!
+     link: confluent.io/training
+	 
+	 
+	
+	
+  
+   
+   
+
+
+
+
+
+
+
+
+
+
+
+  

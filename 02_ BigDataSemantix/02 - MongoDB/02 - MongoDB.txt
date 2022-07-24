@@ -1,0 +1,392 @@
+
+ ------------=========================== MONGO ============================
+ 
+ ACESSAR CONTEINER: docker exec -it mongo bash
+ 
+ acessar express: http://localhost:8081
+ 
+ Iniciar : mongo --host mongo -u mongoadmin -p root -authenticationDatabase admin
+   ou mongo
+   
+   
+ Instalação do docker e docker-compose
+Acesso: https://docs.docker.com/get-docker/
+
+  -----------------------------------------------------
+  Arquivo docker-compose.yml:
+  version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - db:/data/db
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+
+volumes:
+  db:   
+   
+  
+  ------------------------------------
+  
+  
+  Baixar imagens: docker pull mongo
+  
+  baixar mongo express: docker pull mongo-express
+  
+  ver images: docker images
+  
+     visualisar bancos: show dbs
+	 
+
+  Criar banco: use nomeDB
+  
+  ver o banco conectado: bd
+  
+  criar uma collection (uma tabela) :  db.createCollection('nomeCollection')
+  
+  Ver collection: show collections
+  
+  
+  excluir collection: db.nomeCollection.drop()
+  
+  
+  Excluir banco dados que voce esta conectado: db.dropDatabase()
+  
+  Renomear Collection: db.nomeColletion.renameCollection('nomeNovaCollection') 
+   ex:  db.cliente.insertOne(
+         {
+           nome: "Lucas",
+		   idade: 20,
+		   conhecimento: "Windows, Linux, Hadoop"
+         }
+        )
+  
+  Adicionar um documento: db.nomeCollection.inertOne({documento})
+  
+  Inserir varios documentos(array): 
+    db.nomeCollection.insertMany(
+	  [
+	    {documento1},{documento2},
+		{documentoN}	
+	  ])
+   ex:  db.cliente.insertMany(
+			[
+				 {
+				   nome: "Ana",
+				   idade: 25,
+				   conhecimento: "Windows, Linux, NoSQL"
+				 }
+			]
+			[
+				 {
+				   nome: "João"
+				 }
+			]
+        )
+  
+  
+  Listar documentos : db.nomeCollection.find().pretty()
+  
+  
+  
+ Consultar :  db.nomeCollection.find({criterioConsulat}, {projecao})
+    criterio: {atributo:{operador: valor}}
+	projecao: {atributo: 0} --> ocultar o atributo
+	          {atributo: 1} ---> mostrar o atributo
+	
+ex.: por um atributo: db.cliente.find({nnome: "João"}, 1)	 ---> o 1 é o limit de documentos para apresentar
+                      db.cliente.find({nnome: "João"}).pretty() ---> pretty deixa identatdo o json do result.
+                      db.cliente.find({"endereco.cidade": "São Paulo"})
+					  db.cliente.find({nome: "Lucas"}, {_id: 0, conhecimento : 0}) -- nao mostrar _id e conhecimento.
+					  db.cliente.find({nome: "Lucas"}, {conhecimento : 1}) -- mostrar apenas conhecimento.
+					  
+	por um atributo com operador: db.cliente.find({idade:{$lt:18}})  ---> lt menor que.
+	
+	operadores pode ser: 
+	    $eq - igual a   {field : {$eq:10}} ou {field : 10}
+		$ne - diferente
+		$gt - maior que
+		$gte - maior ou igual
+		$lt - Menor 
+		$lte - Menor ou igual
+		$in - tipo in sql, uma lista - {filde : {$in:[10, 20, 40]}}
+		$nin - é o not in
+		$not - não    - {field : {$not : {$eq: 10}}} ou {field : {$ne: 10}}
+		
+pesquisa por multipos criterios:
+and -- default : db.cliente.find({"endereco.cidade":"Sao paulo", idade: 10})	
+
+or --- db.cliente.find({$or : [
+                                {"endeereco.cidade":"Sao Paulo"},
+								{"idade: {$gte: 18}"}
+                              ]
+                       })
+		
+and e or fica: db.cliente.find({ 
+                                 conhecimento : "Windows", --> aqui é o "and"
+								 {$or : [{"endereco.cidade":"Sao Paulo"}, {idade: [$gte: 18]}]} --> aqui é o "OR"
+                               )}
+	
+
+ordenação: db.nomeCollection.find({....}).sort({atribuo: valor})  ---> valor 1 ascendente, -1 desc
+  ex.: db.cliente.find({...}).sort({"endereco.cidade":1, nome: 1
+  
+ Limitar a consulta: db.cliente.find({...}).limit(valor
+ 
+  Limitar a consulta para o primeiro documento: db.cliente.findOne({...}) --> seria como usar o limit(1)
+
+	   
+   
+  atualizar documentos: 
+        db.nomeCollection.updateOne(filtro, atualizacao)
+		db.nomeCollection.updateMany(filtro, atualizacao)
+		
+    sendo: filtro: {atributo: {operador: valor}}
+	       atualziaçao: {operadroAtualizacao: {atributo: valor, atributo: valor, ...}}
+		   
+
+atualizar ou criar caso nao tenha: 
+    db.cliente.updateOne(
+	                      {_id: 1},
+						  {$set: {idade: 25, estado: "SP"}}
+	                  )
+					  
+Operador Unset  remover atributo, sendo passar no valor "":
+   ex:  db.cliente.updateOne(
+                              {_id : 1},
+							  {$unset: {idade: ""}}
+                            )
+							
+Atualizar varios documentos:
+   ex:  db.cliente.updateMany(
+                              {idade: {$gt: 27}},  ---> assim atualzamos todos maior que 27
+							  {$set: {seguro_carro: "baixo"}}
+                            )
+
+Atualizar nome dos atributos rename:
+   ex:  db.cliente.updateMany(
+                              {},  ---> assim vai tem todos, seria um "Update sem Where"
+							  {$rename: {"nome": "nome_completo", "endereco": "endereco_completo", ...}}
+                            )
+
+
+Atualizar Datas ou inserir ao criar: 
+    Date() -- data atual string
+	new Date() - atual como data UTC(ISODate)
+	new Date("YYYY-mm-ddTHH:MM:ssZ")
+	New Timestamp() -- timestamp autal
+ex.
+   db.tet.insertOne(
+                    {
+					 ts: new Timestamp(),
+					 date: new Date(),
+					 data_string: Date(),
+					 Config_date: new Date("2020-08")
+					}
+                   )
+
+
+Operador currentDate sendo timestamp ou date:
+db.cliente.updateMany({
+                        idade: {$gt: 27}
+                      },
+					  {
+					   $set:{seguro_carro: "baixo"},
+					   $currentDate:{atualizado: {$type: "timestamp"}}
+					  }
+                     )
+					 
+Atualizar Array do documento:
+db.cliente.updateOne(
+                     {_id:2, "conhecimento: "mongo"},  --> O elemento/campo tem que esta no filtro para poder atualizar.
+					 {$set: {"conhecimento.$":"MongoDB"}} ---> com o dolar atualiza apens o elemento não todo o campo.
+                    )
+
+
+Adicionar elemento Array: push
+         db.cliente.updateOne({_id:2},{$push : {conheicmento: "Redis}})
+		 
+Remover elemento Array: pull
+         db.cliente.updateOne({_id:2},{$pull : {conheicmento: "Redis}})
+
+
+Deletar domentos :
+    db.nomeColletion.deleteOne(filtro) ---> onde o filtro é: {atributo: {operador:valor}}
+	db.cliente.deleteOne({_id: 2})   ---> bom fazer um find() antes, pois se houver mais de um doc, ira deletar o primeiro.
+	
+	db.nomeCollection.deleteMany(filtro)
+	db.cliente.deleteMany({status: "Inativo"})
+	
+Deletar Collection: db.cliente.drop()
+
+
+Criar index: db.nomeCollection.createIndex({key, opcoes})
+              key - atribuo : valor  --> 1 asc e -1 desc
+			  
+		db.cliente.createIndex({nome:1})
+		
+visualizar todos idnex: db.cliente.getIndex()
+
+Criar indexmulticampos: db.cliente.createIndex(
+                                               {nome: 1, item: -1},
+											   {name: "query itens"} --> para aparecer com um nome que fale o motivo
+                                             )
+	
+
+criar index unico: db.cliente.createIndex({user_id: 1}, {unique: true}) --> cso for incluir não deixa se ja existir.
+                   db.cliente.createIndex({user_id: 1, nome: 1}, {unique: true})
+				   
+
+remover um index: db.nomeCollection.dropIndex({key})
+                  db.cliente.dropIndex({nome: 1})
+				  
+excluir todos index: db.cliente.dropIndexes()
+
+
+forçar o otimizador usar o Index: db.cliente.find({...}).hint({nome: 1})
+
+
+como saber se esta usando, ver plano execução, explain(): db.cliente.find().explain()
+    verificar stage queryPlanner.winningPlan:
+	                COLLSCAN: Collection Scan -- ruim, percorre tudo
+					IXSCAN:  Scan com index keys -- bom , vai nos index.
+					FETCH:   Recuperar documentos
+					SHARD_MERGE:  junção de shards
+					SHARDING_FILTER: Filtrar documentos orfaos em shards
+	
+
+Usar REGEX:
+    db.nomeCollection.find({fiel: {$regex: /pattern/, $options: 'options'}})
+	db.nomeCollection.find({fiel: {$regex: 'pattern', $options: 'options'}})
+	db.nomeCollection.find({fiel: {$regex: /pattern/options}})
+	   opções: i ignora case-sensitive
+	           m comina varias linhas
+			      incluir ^ no inico e $ final linha.
+				  
+pegar nome lucas não case-sensitive: 
+    db.cliente.find({nome: {$regex: /lucas/, $options: 'i'}})
+	db.cliente.find({nome: {$regex: 'lucas', $options: 'i'}})
+	db.cliente.find({nome: {$regex: /lucas/i}})
+	
+retornar clientes da cidade Sao Paulo, pesquisando por Sao Paulo:
+    db.cliente.find({nome: {$regex: "s.o paulo", $options: "i"}})
+	
+retornar clientes da cidades que começam com "São":
+    db.cliente.find({nome: {$regex: "^são", $options: "i"}})
+	
+retornar cpfs que contenham letras:
+    db.cliente.find({cpf: {$regex: "[a-z]"}})
+     
+  
+
+EstimatedDocumentCount: estimativa cont pelos metadados.
+
+  
+Agregação com pipeline - 
+        db.nomeCollection.aggregate(
+		                 {$estagio: parametros}, --> simvrão é para pegar todos.
+						 {$estagio: operadoresExpressao},
+						 {$estagio: parametros, operadoresExpressao}
+						)
+           
+Agregação Match - fazer busca 
+        db.nomeCollection.aggregate(
+		                 {$match: {status: "Ativo"}}
+						)
+						
+Agregação Group - fazer agrupamento como sql 
+        db.nomeCollection.aggregate(
+		                 {$group: 
+						    _id: "$atributo",
+							atributoNovoSaida: {acumulador1: "$atributoAgg"} -- tipo: sum, push, avg, mim, max, first, last, addToSet, stdDevPop, stdDevSamp..
+						 }
+						)
+    ex: db.funcionarios.aggregate(
+	       {$group: {_id: "$setor", total:{$sum: "$vendas"}}}
+		 )
+    ex: db.funcionarios.aggregate(
+	       {$match: {status: "Ativo"}},
+	       {$group: {
+		             _id: "$setor", 
+					 total:{$sum: "$vendas"},
+					 media:{$avg: "vendas"},
+					 quantidade:{$sum: 1}
+					,
+				{$sort: {_id: 1}},
+				{$limit: 10}
+			}
+		 )
+
+
+Agregação Lookup - left outr join: 
+   db.nomeCollectionDoFrom.aggregate(
+                    {$lookup:  {
+					            from: nomeCollectionDoLeft
+                                localField: atributoReferenciaDoFrom
+								foreignField: atributoReferenciaDoLeft
+								as: NoomeArraySaida
+					            }
+					 
+					}
+                  )
+
+ex.: db.funionario.aggregate([
+                    {$lookup: {
+					             from:"vendas"
+								 localField: "cod_func"
+								 foreignField: "cod_func"
+								 as: "vendasFuncionario"
+					          },
+                             {$project:{"_id": 0, "cod_func": 1, "vendasFuncionario.cod_cliente": 1}}							  
+					}
+                 ])
+
+ver config Replica Set: rs.conf()
+
+ver o status: rs.status()
+
+-------------====================== MONGO CLOUD ATLAS =====================
+
+link: mongodb.com/cloud/atlas
+
+
+--------------===================== certificações ====================
+
+link: university.mongodb.com/courses/catalog
+
+link: university.mongodb.com/certification/exam.prop
+
+
+
+
+
+
+Telegram
+Participe do nosso canal do Telegram:
+
+https://t.me/semantixbigdata (Links para um site externo.)
+
+ 
+
+Participe do nosso grupo do Telegram:
+
+https://t.me/joinchat/n4pm1WmJgFw2ODI5
+
+
+
+
+
+
+
