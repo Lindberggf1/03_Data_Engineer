@@ -595,6 +595,106 @@ Pesquisar em indices especificos:
  
  
  
+	 ------================= Analyzer  =============================
+	 
+	 ---================= Analyzer Principais  =======
+	 
+	Whitespace: Separa as palavras por espaço
+	 
+	Simple: Simples. Texto em lowercase
+	                  Somente texto
+					  Remover numeros
+					  Remove espaços e pontuação
+					  
+	standard: Padrao. Remover espaçois e pontuação
+	                  Texto em lowercase
+					  
+	brazilian, english: idioma. Remove acentos
+	                                   gênero e
+									   plural
+									   
+									   
+	
+	 ---================= Exemplos de Analyzer  =======
+	 
+	 
+	
+ ex.:
+ 
+ PUT cliente1
+ {
+	"mappings":{
+		"properties":{
+			"conhecimento":{
+				"type":"text",
+				"analyzer":"standad"
+			}
+		}
+	}
+ }
+ 
+ 
+ 
+ --------- Boas Praticas
+ 1. Indexar o mesmo campo de maneiras diferentes para fins diferentes
+
+ ex.
+  PUT cliente1
+ {
+	"mappings":{
+		"properties":{
+			"conhecimento":{
+				"type":"text",
+				"analyzer":"standad"
+				"fields":{"raw":{"type":"keyword"}
+			}
+		}
+	}
+ }
+ 
+ ex2
+ 
+  PUT cliente3
+ {
+	"settings":{
+		"index":{
+			"number_of_shards":',
+			"number_of_replicas":0
+		}
+	},
+	"mappings":{
+		"properties":{
+			"nome":{"type":"text"},
+			"conhecimento":{
+				"type":"text",
+				"analyzer":"whitespace"
+				"fields":{
+					"raw":{"type":"keyword"}
+			    }
+		    }
+	    }
+    }
+ }
+ 
+ 	
+	 ---================= Exemplos de Analyzer  =======
+	
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
  
  
  
