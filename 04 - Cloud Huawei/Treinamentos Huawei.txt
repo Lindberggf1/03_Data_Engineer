@@ -5,6 +5,38 @@ CONTA: aluno31.huaweicloud@matza.org
 
 SENHA: huawei482@matzahe
 
+Huawei@123
 
 -------------------------
+ecs-S01: 192.168.0.187
+
+ecs_S02: 192.168.1.138
+
+
+
+--------------
+
+redes:
+SP
+rede:
+
+ip do ECS:
+
+GW Local
+
+GW SP:
+
+
+
+Hong kong
+rede:
+
+
+ip do ECS
+
+
+GW Local
+
+gW hk: 
+
 
