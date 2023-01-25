@@ -9,8 +9,26 @@ Download WSL 2
 
 https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi
 
-
-
+---
+Apos instalar o Ubutun, instalar o wsl2
+para setar antes colocar 
+1.colocar no Windows Features
+  -- virtual Machine Platform
+  -- windows subsystem for linux
+  -- tirar Hyper-v caso tiver marcado
+  
+2. No Power Shell adm:
+  ver primeiro se tem, ou a versao que tem do wsl e do linux:
+   -- wsl -l -v
+  
+  para passar para 2 fazer:
+  -- wsl --set-default-version 2
+  -- wsl --set-version <distribuition name> 2
+  
+3. No docker, apos instalar ver:
+  -- Em resources ativar integraçaõ com o Wsl caso não tiver
+  -- ativar o Ubutun
+  
 ---------------===============================================
 
 
