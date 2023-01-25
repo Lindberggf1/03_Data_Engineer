@@ -29,6 +29,11 @@ para setar antes colocar
   -- Em resources ativar integraçaõ com o Wsl caso não tiver
   -- ativar o Ubutun
   
+  
+4. Para verificar os diretorios Linux e docker:
+  - no windows explores so digitar \\wsl$
+  
+  
 ---------------===============================================
 
 
