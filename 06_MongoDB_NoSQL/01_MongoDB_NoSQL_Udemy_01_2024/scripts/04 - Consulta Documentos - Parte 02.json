@@ -1,0 +1,110 @@
+
+###########################################################
+# OUTROS EXEMPLOS DE INSERÇÃO E CONSULTA DE DADOS (DOCUMENTOS)
+###########################################################
+
+
+# Inserir um documento com array e documentos aninhados
+db.estoque.insert(
+   {
+     item: "ABC1",
+     detalhes: {
+        modelo: "14Q3",
+        fabricante: "XYZ Empresa"
+     },
+     itensestoque: [ { tamanho: "S", qtde: 25 }, { tamanho: "M", qtde: 50 } ],
+     categoria: "roupas"
+   }
+)
+
+
+# Verificar o documento inserido 
+db.estoque.find().pretty();
+
+
+# Inserir um Array de Documentos
+var meusdocumentos =
+    [
+      {
+        item: "ABC2",
+        detalhes: { modelo: "14Q3", fabricante: "M1 Corporation" },
+        itensestoque: [ { tamanho: "M", qtde: 50 } ],
+        categoria: "roupas"
+      },
+      {
+        item: "MNO2",
+        detalhes: { modelo: "14Q3", fabricante: "ABC Empresa" },
+        itensestoque: [ { tamanho: "S", qtde: 5 }, { tamanho: "M", qtde: 5 }, { tamanho: "L", qtde: 1 } ],
+        categoria: "roupas"
+      },
+      {
+        item: "IJK2",
+        detalhes: { modelo: "14Q2", fabricante: "M5 Corporation" },
+        itensestoque: [ { tamanho: "S", qtde: 5 }, { tamanho: "L", qtde: 1 } ],
+        categoria: "utensílios domésticos"
+      } 
+    ]; 
+
+db.estoque.insert(meusdocumentos);
+
+
+# Inserir múltiplos documentos utilizando o "bulk"
+var bulk = db.estoque.initializeUnorderedBulkOp();
+
+bulk.insert(
+   {
+     item: "BE10",
+     detalhes: { modelo: "14Q2", fabricante: "XYZ Empresa" },
+     itensestoque: [ { tamanho: "L", qtde: 5 } ],
+     categoria: "roupas"
+   }
+);
+
+bulk.insert(
+   {
+     item: "ZYT1",
+     detalhes: { modelo: "14Q1", fabricante: "ABC Empresa"  },
+     itensestoque: [ { tamanho: "S", qtde: 5 }, { tamanho: "M", qtde: 5 } ],
+     categoria: "utensílios domésticos"
+   }
+);
+
+bulk.execute();
+
+
+# Consulta especificando uma condição de igualdade
+db.estoque.find( { categoria: "roupas" } ).pretty();
+ 
+
+# Consulta especificando uma condição "in" 
+db.estoque.find( { categoria: { $in: [ 'roupas', 'utensílios domésticos' ] } } ).pretty();
+
+
+# Consulta especificando uma condição "AND" e "MENOR QUE" 
+db.estoque.find( { categoria: 'roupas', "itensestoque.qtde": { $lt: 10 } } ).pretty();
+
+
+# Contar a quantidade de registros retornados na consulta 
+db.estoque.count(); 
+# ou 
+db.estoque.find( { categoria: 'roupas', "itensestoque.qtde": { $lt: 10 } } ).count();
+
+
+# Consulta especificando uma condição "OR"
+db.estoque.find(
+   {
+     $or: [ { "itensestoque.qtde": { $lt: 10 } }, { "itensestoque.qtde": { $gt: 20 } } ]
+   }
+).pretty();
+
+
+# Consulta especificando condição "AND" e "OR"
+db.estoque.find(
+   {
+     categoria: 'roupas',
+     $or: [ { "itensestoque.qtde": { $lt: 10 } }, { "itensestoque.qtde": { $gt: 20 } } ]
+   } 
+).pretty(); 
+
+ 
+

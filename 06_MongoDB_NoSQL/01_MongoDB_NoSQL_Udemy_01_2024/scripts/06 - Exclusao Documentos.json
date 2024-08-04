@@ -1,0 +1,25 @@
+
+###########################################################
+# EXEMPLOS DE EXCLUSÃO DE DADOS (DOCUMENTOS)
+###########################################################
+
+
+# Remover os documentos que atendam a um determinado predicado
+db.estoque.remove( { type : "comida" } )
+
+
+# Remover um único documento que atenda a um determinado predicado
+db.estoque.remove( { type : "comida" }, 1 )
+
+
+# Remover todos os documentos de uma collection 
+# Obs.: Comparando com um SGBD relacional, este comando é 
+# equivalente a um delete sem a cláusula "where"
+db.estoque.remove({}) 
+
+
+# Para remover todos os documentos de uma collection, pode ser mais 
+# eficiente usar o método "drop()" para dropar a collection 
+# inteira, e então recriar a mesma e os respectivos índices.
+db.estoque.drop(); 
+

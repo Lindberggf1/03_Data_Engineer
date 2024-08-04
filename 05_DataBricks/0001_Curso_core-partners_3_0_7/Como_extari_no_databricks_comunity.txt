@@ -1,0 +1,1 @@
+Basta importar para o seu workspace este arquivo .dbc

@@ -1,0 +1,66 @@
+
+###########################################################
+# EXEMPLOS DE ALTERAÇÃO DE DADOS (DOCUMENTOS)
+###########################################################
+ 
+# Atualizar atributos específicos no documento (usar o operador "set")
+db.estoque.update(
+    { item: "MNO2" },
+    {
+      $set: {
+        categoria: "eletrônicos",
+        detalhes: { modelo: "14Q3", fabricante: "XYZ Empresa" }
+      },
+      $currentDate: { lastModified: true }
+    }
+)
+
+
+# Atualizar um atributo em um documento aninhado 
+db.estoque.update(
+  { item: "ABC1" },
+  { $set: { "detalhes.modelo": "14Q2" } }
+)
+
+
+# Atualizar múltiplos documentos
+db.estoque.update(
+   { categoria: "roupas" },
+   {
+     $set: { categoria: "eletrônicos" },
+     $currentDate: { lastModified: true }
+   },
+   { multi: true }
+) 
+
+
+# Substituir o documento 
+db.estoque.update(
+   { item: "BE10" },
+   {
+     item: "BE05",
+     itensestoque: [ { tamanho: "S", qtde: 20 }, { tamanho: "M", qtde: 5 } ],
+     categoria: "eletrônicos"
+   }
+)
+
+
+# Atualização utilizando "upsert"
+# Ao especificar "upsert: true", o método "update()" ou atualiza 
+# os documentos que atenderem ao predicado da consulta ou insere 
+# um novo documento usando os valores especificados no update, 
+# caso não nenhum documento previamente existente atenda ao predicado de busca.
+
+db.estoque.update(
+   { item: "TBD1" },
+   {
+     item: "TBD1",
+     detalhes: { "modelo" : "14Q4", "fabricante" : "ABC Empresa" },
+     itensestoque: [ { "size" : "S", "qty" : 25 } ],
+     categoria: "utensílios domésticos"
+   },
+   { upsert: true }
+)
+
+
+

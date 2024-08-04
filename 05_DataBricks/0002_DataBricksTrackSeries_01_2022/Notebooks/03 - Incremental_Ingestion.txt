@@ -1,0 +1,95 @@
+%python
+ 
+df1 = spark.read.format("csv").option("header", "true").load("dbfs:/FileStore/shared_uploads/rafael.ricotta@databricks.com/webinar/prices_incremental-1.csv")
+%python
+ 
+df1.show()
+
+%python
+ 
+df1.createOrReplaceTempView("products_incremental")
+Enabling Changing Data Feed
+%sql
+ 
+ALTER TABLE webinar.bronze_products SET TBLPROPERTIES (delta.enableChangeDataFeed = true)
+OK
+%sql
+ 
+MERGE INTO
+  webinar.bronze_products AS A
+USING
+  products_incremental AS B
+ON 
+  A.productId = B.productId
+WHEN MATCHED AND A.product_name <> B.product_name OR A.price <> B.price OR A.sale_price <> B.sale_price OR A.Code <> B.Code THEN
+  UPDATE SET *
+WHEN NOT MATCHED THEN
+  INSERT *
+  
+%sql
+ 
+SELECT 
+  * 
+FROM 
+  table_changes('webinar.bronze_products', 1, 10) 
+  
+ Prepare Silver Table Dimension
+%sql
+ 
+CREATE OR REPLACE TABLE webinar.silver_products AS
+SELECT 
+  md5(concat(productId, product_name, sale_price, Code)) AS sk_prices,
+  productId,
+  product_name,
+  price,
+  sale_price,
+  code,
+  CAST(now() AS DATE)  AS start_date,
+  CAST("9999-12-31" AS DATE) AS end_date
+FROM 
+  table_changes('webinar.bronze_products', 1, 10) 
+WHERE
+  _change_type = 'update_postimage' OR _change_type = 'insert'
+  
+Query returned no results
+%sql
+ 
+SELECT * FROM webinar.silver_products;
+
+
+Low Shuffle Merge
+%python
+ 
+spark.conf.set("spark.databricks.delta.merge.enableLowShuffle", "true")
+%sql
+ 
+MERGE INTO webinar.dim_products AS A
+USING (
+SELECT DISTINCT(*) FROM (SELECT B.productID AS mergeKey, A.* FROM webinar.silver_products AS A LEFT JOIN webinar.dim_products AS B
+ 
+ON A.productId = B.productId)
+ 
+UNION ALL
+ 
+SELECT NULL AS mergeKey, A.* FROM webinar.silver_products AS A JOIN webinar.dim_products AS B
+WHERE B.productId = A.productId AND B.sk_prices <> A.sk_prices AND  B.end_date = "9999-12-31") AS update
+ 
+ON A.productId = update.mergeKey
+ 
+WHEN MATCHED AND A.end_date = "9999-12-31" AND update.sk_prices <> A.sk_prices AND update.mergeKey IS NOT null 
+  THEN
+  UPDATE SET 
+    A.end_date = (SELECT CAST(NOW() AS DATE))
+ 
+WHEN NOT MATCHED AND update.mergeKey IS null
+  THEN
+  INSERT 
+    (sk_prices, productId, product_name, price, sale_price, Code, start_date, end_date) 
+  VALUES 
+    (update.sk_prices, update.productId, update.product_name, update.price, update.sale_price, update.Code, update.start_date, update.end_date)
+	
+	
+	%sql
+ 
+SELECT * FROM webinar.dim_products WHERE productId = "DB-SG-G01";
+

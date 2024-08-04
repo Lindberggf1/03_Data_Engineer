@@ -1,0 +1,36 @@
+###########################################################
+# INTRODUÇÃO
+###########################################################
+
+
+# Mostrar bancos de dados disponíveis no servidor 
+show dbs 
+
+
+# Usar um determinado banco de dados (muda o contexto para o referido banco de dados) 
+use <nome_do_bd> 
+
+
+# Criar uma collection
+db.createCollection('postagens')
+
+
+# Eliminar um banco de dados
+use <nome_do_bd> 
+db.dropDatabase();
+
+
+# Exibir Collections
+# system.indexes : padrao do Mongo
+show collections 
+
+
+# Remover todos os documentos de uma collection
+db.nomedacollection.remove({}) 
+
+
+# Dropar uma collection
+db.nomedacollection.drop();
+
+
+

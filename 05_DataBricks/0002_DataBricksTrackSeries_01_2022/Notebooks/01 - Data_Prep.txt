@@ -1,0 +1,57 @@
+%sql
+ 
+DROP TABLE IF EXISTS webinar.bronze_products;
+DROP TABLE IF EXISTS webinar.dim_products;
+OK
+Explore File
+%python
+ 
+df1 = spark.read.format("csv").option("header", "true").load("dbfs:/FileStore/shared_uploads/rafael.ricotta@databricks.com/webinar/prices.csv")
+%python
+ 
+df1.show()
+
+%python
+ 
+df1.createOrReplaceTempView("products")
+
+%sql
+ 
+CREATE SCHEMA IF NOT EXISTS webinar LOCATION "dbfs:/FileStore/shared_uploads/rafael.ricotta@databricks.com/webinar/"
+OK
+%sql
+ 
+DROP TABLE IF EXISTS webinar.bronze_products
+OK
+%sql
+ 
+CREATE OR REPLACE TABLE webinar.bronze_products AS SELECT * FROM products;
+Query returned no results
+%sql
+ 
+SELECT * FROM webinar.bronze_products;
+
+CARGA FRIA
+Os dados que comporão minha chave sintética são productId (chave de negócio), product_name, sale_price e Code
+%sql
+ 
+CREATE OR REPLACE TABLE webinar.dim_products
+  AS
+SELECT 
+  md5(concat(productId, product_name, sale_price, Code)) AS sk_prices, 
+  productId,
+  product_name,
+  CAST(price AS DOUBLE) AS price,
+  CAST(sale_price AS DOUBLE) AS sale_price,
+  Code,
+  CAST("2022-01-01" AS DATE)  AS start_date,
+  CAST("9999-12-31" AS DATE) AS end_date
+FROM webinar.bronze_products
+Query returned no results
+%sql
+ 
+SELECT * FROM webinar.dim_products;
+
+%sql
+ 
+OPTIMIZE webinar.dim_products ZORDER BY sk_prices

@@ -1,0 +1,22 @@
+-------------------------------------------------------------------
+Resumo - Iniciar Serviço no Windows: 
+-------------------------------------------------------------------
+
+
+-- Executar CMD como "admin" e executar os seguintes passos:
+ 
+
+-- Criar pasta para dados
+md C:\data\db
+
+
+-- Entrar na pasta aonde fica localizado o executável do serviço MongoDB
+cd "C:\Program Files\MongoDB\Server\3.6\bin"
+
+
+-- Inicializar o serviço do banco de dados MongoDB
+mongod --port 27017 --dbpath c:\data\db
+
+
+-------------------------------------------------------------------
+

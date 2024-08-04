@@ -1,0 +1,79 @@
+Fact Table ETL
+%python
+ 
+df = spark.read.text("dbfs:/FileStore/shared_uploads/rafael.ricotta@databricks.com/webinar/access.log")
+df.createOrReplaceTempView("fact_log")
+%fs head dbfs:/FileStore/shared_uploads/rafael.ricotta@databricks.com/webinar/access.log
+
+%sql
+ 
+CREATE OR REPLACE TABLE webinar.bronze_fact AS
+SELECT 
+    to_timestamp(regexp_extract(value, '[^\\[]*\\[([^\\]]*)', 1), 'dd/MMM/yyyy:HH:mm:ss') AS time,
+    regexp_extract(value, '^([^\\s]+)', 1) AS host,
+    regexp_extract(value, '[^\\"]*\\"([A-Za-z]*)', 1) AS action,
+    regexp_extract(value, 'action=([^&]*)', 1) AS nav_action,
+    coalesce(regexp_extract(value, 'productId=(\\S+)[\"|&]', 1)) AS product_id,
+    regexp_extract(value, 'itemId=([^&|"]*)', 1) AS item_id,
+    regexp_extract(value, 'JSESSIONID=(\\S+)', 1) AS jsessionid,
+    regexp_extract(value, '[^\"]*[^\/]*([^\"]*)', 1) AS path,
+    regexp_extract(value, '[^\"]*\"[^\"]*\".([0-9]*)', 1) AS status,
+    cast(regexp_extract(value, '[^\"]*\"[^\"]*\".[0-9]*.([0-9]*)', 1) AS INT) AS content_size,
+    regexp_extract(value, '[^\"]*\"[^\"]*\"[^\"]*\"([^\"]*)', 1) AS site,
+    regexp_extract(value, '[^\"]*\"[^\"]*\"[^\"]*\"[^\"]*\".\"([^\"]*)', 1) AS agent
+FROM fact_log
+
+%sql
+ 
+SELECT * FROM webinar.bronze_fact;
+
+%sql
+ 
+INSERT INTO TABLE webinar.bronze_fact
+SELECT cast(now() AS DATE ) AS time, host, action, nav_action, product_id, item_id, "SD1SM3HDS2718" AS jsessionid, path, status, content_size, site, agent  FROM webinar.bronze_fact WHERE jsessionid = "SD8SL4FF4ADFF7292" AND nav_action = "purchase" AND item_id = "EST-11"
+
+%sql
+ 
+CREATE OR REPLACE TABLE webinar.silver_fact_product
+AS
+SELECT 
+  * 
+FROM 
+  webinar.bronze_fact
+WHERE
+  nav_action = "purchase"  AND product_id <> ""
+Query returned no results
+%sql
+ 
+CREATE OR REPLACE TABLE webinar.silver_fact_product_fix
+AS
+SELECT 
+  * 
+FROM 
+  webinar.bronze_fact
+WHERE
+  nav_action = "purchase"  AND product_id = "" AND path like "/cart/success%"
+Query returned no results
+Final Table
+%sql
+ 
+CREATE OR REPLACE TABLE webinar.silver_fact_product_final AS
+SELECT A.* FROM webinar.silver_fact_product AS A INNER JOIN webinar.silver_fact_product_fix AS B
+ON A.item_id = B.item_id AND A.jsessionid = B.jsessionid
+Query returned no results
+Fact Table With Dimension Surrogate Key
+%sql
+ 
+CREATE OR REPLACE TABLE webinar.gold_fact_product AS
+SELECT B.sk_prices, A.* FROM webinar.silver_fact_product_final AS A INNER JOIN webinar.dim_products AS B
+ON A.product_id = B.productId AND CAST(time AS DATE) BETWEEN start_date AND end_date
+Query returned no results
+Let's connect everything
+%sql
+ 
+SELECT product_name, productId, CAST(time AS DATE) AS sale_date, SUM(sale_price) total_sales FROM webinar.gold_fact_product AS A INNER JOIN webinar.dim_products AS B
+ON A.sk_prices = B.sk_prices 
+WHERE product_id = "DB-SG-G01"
+GROUP BY 1, 2, 3
+ORDER BY 2
+
