@@ -1,12 +1,12 @@
 
-# 🛠️ Teste PySpark - Banco Inter
+# Teste PySpark - Banco Inter
 
 Este repositório contém a solução do **Teste de Conhecimentos em PySpark** proposto pelo Banco Inter.  
 O objetivo foi aplicar conceitos de manipulação de dados, funções avançadas, performance, integração e processamento de grandes volumes de dados utilizando PySpark.
 
 ---
 
-## 📋 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 projeto-pyspark-banco-inter/
@@ -27,7 +27,7 @@ projeto-pyspark-banco-inter/
 
 ---
 
-## 📚 O que foi implementado
+## Implementação
 
 ### Parte 1: Manipulação de Dados
 - Criação de DataFrame com colunas `Name`, `Age` e `Occupation`.
@@ -60,7 +60,7 @@ projeto-pyspark-banco-inter/
 
 ---
 
-## 🚀 Como executar localmente
+## Como executar localmente
 
 1. Instale as dependências:
     ```bash
@@ -78,7 +78,7 @@ projeto-pyspark-banco-inter/
 
 ---
 
-## 📈 Boas Práticas Aplicadas
+## Boas Práticas Aplicadas
 
 - **Modularização:** Scripts separados por tema para organização e melhor manutenção.
 - **Uso de UDFs e Window Functions:** Aplicações práticas para processamento avançado.
@@ -88,7 +88,7 @@ projeto-pyspark-banco-inter/
 
 ---
 
-## ✨ Melhorias Futuras
+##  Melhorias Futuras
 
 - Automatizar testes unitários em PySpark (ex: `pytest + chispa`).
 - Implementar logging estruturado (com `log4j` ou `logging` Python).
@@ -96,14 +96,14 @@ projeto-pyspark-banco-inter/
 
 ---
 
-## 📞 Contato
+## Contato
 
 Caso tenha interesse em discutir mais sobre este projeto:
 
 - **Lindberg Gualberto Ferreira**
 - 📧 Email: lindberggf@gmail.com
-- 💼 LinkedIn: [(preencher)](https://www.linkedin.com/in/lindberg-gualberto-ferreira-57a80078)
+- 💼 LinkedIn: [(https://www.linkedin.com/in/lindberg-gualberto-ferreira-57a80078)](https://www.linkedin.com/in/lindberg-gualberto-ferreira-57a80078)
 
 ---
 
-> Projeto desenvolvido com dedicação e foco em boas práticas de engenharia de dados. 🚀
+> Projeto desenvolvido com dedicação e foco em boas práticas de engenharia de dados.
