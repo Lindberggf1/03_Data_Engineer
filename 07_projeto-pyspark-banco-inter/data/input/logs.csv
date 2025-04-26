@@ -1,0 +1,5 @@
+timestamp,user_id,action
+2025-04-25 10:00:00,user_1,login
+2025-04-25 10:05:00,user_2,purchase
+2025-04-25 10:10:00,user_1,logout
+2025-04-25 10:15:00,user_3,login
